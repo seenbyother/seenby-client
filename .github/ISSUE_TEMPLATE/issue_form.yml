@@ -1,0 +1,32 @@
+name: "feat 이슈 생성"
+description: "기능 구현, 수정, 문서화 등 작업 단위를 생성합니다"
+title: "[feat] 이슈 제목을 입력해주세요"
+labels: [feat]
+body:
+  - type: input
+    id: dueDate
+    attributes:
+      label: "마감일"
+      placeholder: "2026-05-10"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: assignee
+    attributes:
+      label: '담당자(Assignee)'
+      options:
+        - leesumang
+    validations:
+      required: true
+
+  - type: textarea
+    id: tasks
+    attributes:
+      label: "체크리스트"
+      description: "해당 이슈에 필요한 작업 목록을 작성해주세요."
+      value: |
+        - [ ] Task1
+        - [ ] Task2
+    validations:
+      required: true
