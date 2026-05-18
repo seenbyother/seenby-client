@@ -1,4 +1,3 @@
-import { useState } from "react";
 import appleIcon from "@/assets/apple.svg";
 import googleIcon from "@/assets/google.svg";
 import kakaoIcon from "@/assets/kakao.svg";
@@ -33,20 +32,9 @@ const SOCIAL_PLATFORMS: {
 ];
 
 function LoginPage() {
-	const [loadingPlatform, setLoadingPlatform] = useState<SocialPlatform | null>(
-		null,
-	);
-	const [notice, setNotice] = useState("");
-
 	const handleSocialLogin = (platform: SocialPlatform) => {
-		setLoadingPlatform(platform);
-		setNotice("");
 		console.log(`${platform} login`);
-
-		window.setTimeout(() => {
-			setLoadingPlatform(null);
-			setNotice("SNS 로그인 연동 전 UI 확인용 상태입니다.");
-		}, 700);
+		window.alert("SNS 로그인 연동 전 UI 확인용 버튼입니다.");
 	};
 
 	const handleTermsClick = (type: "terms" | "privacy") => {
@@ -66,14 +54,12 @@ function LoginPage() {
 				<div className="login-actions">
 					<div className="social-login-list">
 						{SOCIAL_PLATFORMS.map((platform) => {
-							const isLoading = loadingPlatform === platform.id;
 							const buttonLabel =
 								platform.id === "kakao" ? platform.label : platform.shortLabel;
 
 							return (
 								<button
 									className={`social-login-button ${platform.id}`}
-									disabled={loadingPlatform !== null}
 									key={platform.id}
 									onClick={() => handleSocialLogin(platform.id)}
 									type="button"
@@ -84,17 +70,11 @@ function LoginPage() {
 										className="social-icon"
 										src={platform.icon}
 									/>
-									<span>{isLoading ? "연결 준비 중..." : buttonLabel}</span>
+									<span>{buttonLabel}</span>
 								</button>
 							);
 						})}
 					</div>
-
-					{notice && (
-						<p className="login-notice" role="status">
-							{notice}
-						</p>
-					)}
 
 					<p className="terms">
 						<button type="button" onClick={() => handleTermsClick("terms")}>

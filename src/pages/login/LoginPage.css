@@ -132,8 +132,7 @@
 	height: 20px;
 }
 
-.terms,
-.login-notice {
+.terms {
 	margin: 0;
 	text-align: center;
 	font-size: 12px;
@@ -160,13 +159,6 @@
 	outline: 2px solid rgba(20, 118, 255, 0.22);
 	outline-offset: 3px;
 	border-radius: 3px;
-}
-
-.login-notice {
-	padding: 10px 12px;
-	border-radius: 8px;
-	background: #f3f8ff;
-	color: var(--brand-blue);
 }
 
 @media (min-width: 768px) {
