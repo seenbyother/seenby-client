@@ -4,10 +4,10 @@ import googleIcon from "@/assets/google.svg";
 import kakaoIcon from "@/assets/kakao.svg";
 import "./LoginPage.css";
 
-type SocialProvider = "kakao" | "google" | "apple";
+type SocialPlatform = "kakao" | "google" | "apple";
 
-const SOCIAL_PROVIDERS: {
-	id: SocialProvider;
+const SOCIAL_PLATFORMS: {
+	id: SocialPlatform;
 	label: string;
 	shortLabel: string;
 	icon: string;
@@ -33,18 +33,18 @@ const SOCIAL_PROVIDERS: {
 ];
 
 function LoginPage() {
-	const [loadingProvider, setLoadingProvider] = useState<SocialProvider | null>(
+	const [loadingPlatform, setLoadingPlatform] = useState<SocialPlatform | null>(
 		null,
 	);
 	const [notice, setNotice] = useState("");
 
-	const handleSocialLogin = (provider: SocialProvider) => {
-		setLoadingProvider(provider);
+	const handleSocialLogin = (platform: SocialPlatform) => {
+		setLoadingPlatform(platform);
 		setNotice("");
-		console.log(`${provider} login`);
+		console.log(`${platform} login`);
 
 		window.setTimeout(() => {
-			setLoadingProvider(null);
+			setLoadingPlatform(null);
 			setNotice("SNS 로그인 연동 전 UI 확인용 상태입니다.");
 		}, 700);
 	};
@@ -65,24 +65,24 @@ function LoginPage() {
 
 				<div className="login-actions">
 					<div className="social-login-list">
-						{SOCIAL_PROVIDERS.map((provider) => {
-							const isLoading = loadingProvider === provider.id;
+						{SOCIAL_PLATFORMS.map((platform) => {
+							const isLoading = loadingPlatform === platform.id;
 							const buttonLabel =
-								provider.id === "kakao" ? provider.label : provider.shortLabel;
+								platform.id === "kakao" ? platform.label : platform.shortLabel;
 
 							return (
 								<button
-									className={`social-login-button ${provider.id}`}
-									disabled={loadingProvider !== null}
-									key={provider.id}
-									onClick={() => handleSocialLogin(provider.id)}
+									className={`social-login-button ${platform.id}`}
+									disabled={loadingPlatform !== null}
+									key={platform.id}
+									onClick={() => handleSocialLogin(platform.id)}
 									type="button"
 								>
 									<img
 										alt=""
 										aria-hidden="true"
 										className="social-icon"
-										src={provider.icon}
+										src={platform.icon}
 									/>
 									<span>{isLoading ? "연결 준비 중..." : buttonLabel}</span>
 								</button>
