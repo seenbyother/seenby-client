@@ -16,8 +16,8 @@ export function LandingStep({ recipientName, groupName, onAnonymous, onLogin }: 
 					<p className="text-[24px] font-semibold leading-[160%] tracking-[-0.02em] text-[#374151] m-0">
 						{groupName}
 					</p>
-					<p className="text-[28px] font-semibold leading-[160%] tracking-[-0.02em] text-[#030712] m-0">
-						{recipientName} 님이 피드백을 요청했어요
+					<p className="text-[28px] font-semibold leading-[160%] tracking-[-0.02em] text-[#030712] m-0 whitespace-pre-line">
+						{recipientName} 님이{"\n"}피드백을 요청했어요
 					</p>
 				</div>
 
