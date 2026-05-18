@@ -17,6 +17,7 @@ body:
       label: '담당자(Assignee)'
       options:
         - leesumang
+        - H0ngJu
     validations:
       required: true
 
