@@ -102,7 +102,12 @@ export function ThoughtsStep({ recipientName, experiences, thoughts, onChange, o
 				>
 					어떻게 작성하는지 모르겠어요
 				</button>
-				<Button onClick={onSubmit}>전송</Button>
+				<Button
+					onClick={onSubmit}
+					disabled={!filledExperiences.every((_, index) => thoughts[index]?.trim().length > 0)}
+				>
+					전송
+				</Button>
 			</div>
 		</div>
 	);

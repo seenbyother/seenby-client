@@ -15,7 +15,7 @@ export function FeedbackPage() {
 	const [step, setStep] = useState<Step>("landing");
 	const [nickname, setNickname] = useState("");
 	const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
-	const [experiences, setExperiences] = useState<string[]>(["", "", "", ""]);
+	const [experiences, setExperiences] = useState<string[]>(["", ""]);
 	const [thoughts, setThoughts] = useState<string[]>([]);
 
 	const toggleKeyword = (keyword: string) => {
