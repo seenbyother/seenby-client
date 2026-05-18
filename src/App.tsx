@@ -1,7 +1,12 @@
-import LoginPage from "@/pages/login/LoginPage";
+import { BrowserRouter } from "react-router";
+import { AppRoutes } from "@/routes";
 
-function App() {
-	return <LoginPage />;
+export default function App() {
+	return (
+		<BrowserRouter>
+			<div className="max-w-[402px] mx-auto w-full min-h-screen text-left">
+				<AppRoutes />
+			</div>
+		</BrowserRouter>
+	);
 }
-
-export default App;
