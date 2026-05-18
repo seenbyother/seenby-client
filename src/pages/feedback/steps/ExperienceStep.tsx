@@ -5,6 +5,7 @@ interface ExperienceStepProps {
 	experiences: string[];
 	onChange: (index: number, value: string) => void;
 	onAdd: () => void;
+	onDelete: (index: number) => void;
 	onNext: () => void;
 }
 
@@ -13,7 +14,7 @@ function autoResize(el: HTMLTextAreaElement) {
 	el.style.height = `${el.scrollHeight}px`;
 }
 
-export function ExperienceStep({ recipientName, experiences, onChange, onAdd, onNext }: ExperienceStepProps) {
+export function ExperienceStep({ recipientName, experiences, onChange, onAdd, onDelete, onNext }: ExperienceStepProps) {
 	const hasContent = experiences.some((e) => e.trim().length > 0);
 
 	return (
@@ -55,6 +56,16 @@ export function ExperienceStep({ recipientName, experiences, onChange, onAdd, on
 								/>
 								<div className="h-[2px] bg-[#D9D9D9]" />
 							</div>
+							{experiences.length > 1 && (
+								<button
+									type="button"
+									onClick={() => onDelete(index)}
+									className="shrink-0 mt-1 bg-transparent border-none cursor-pointer outline-none p-0 text-[#D9D9D9] hover:text-[#71717A] text-[18px] leading-none"
+									aria-label="삭제"
+								>
+									✕
+								</button>
+							)}
 						</div>
 					))}
 				</div>

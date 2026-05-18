@@ -34,6 +34,11 @@ export function FeedbackPage() {
 
 	const addExperience = () => setExperiences((prev) => [...prev, ""]);
 
+	const deleteExperience = (index: number) => {
+		setExperiences((prev) => prev.filter((_, i) => i !== index));
+		setThoughts((prev) => prev.filter((_, i) => i !== index));
+	};
+
 	const updateThought = (index: number, value: string) => {
 		setThoughts((prev) => {
 			const next = [...prev];
@@ -75,6 +80,7 @@ export function FeedbackPage() {
 				experiences={experiences}
 				onChange={updateExperience}
 				onAdd={addExperience}
+				onDelete={deleteExperience}
 				onNext={() => setStep("thoughts")}
 			/>
 		);
