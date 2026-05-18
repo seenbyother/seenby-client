@@ -1,4 +1,4 @@
-import { Button, ProgressBar } from "@/shared/components";
+import { Button, Header, ProgressBar } from "@/shared/components";
 
 interface ExperienceStepProps {
 	recipientName: string;
@@ -6,6 +6,7 @@ interface ExperienceStepProps {
 	onChange: (index: number, value: string) => void;
 	onAdd: () => void;
 	onDelete: (index: number) => void;
+	onBack: () => void;
 	onNext: () => void;
 }
 
@@ -14,12 +15,13 @@ function autoResize(el: HTMLTextAreaElement) {
 	el.style.height = `${el.scrollHeight}px`;
 }
 
-export function ExperienceStep({ recipientName, experiences, onChange, onAdd, onDelete, onNext }: ExperienceStepProps) {
+export function ExperienceStep({ recipientName, experiences, onChange, onAdd, onDelete, onBack, onNext }: ExperienceStepProps) {
 	const hasContent = experiences.some((e) => e.trim().length > 0);
 
 	return (
 		<div className="min-h-screen flex flex-col bg-white text-left">
-			<div className="px-5 pt-8">
+			<Header onBack={onBack} />
+			<div className="px-5">
 				<ProgressBar step={5} totalSteps={6} />
 			</div>
 

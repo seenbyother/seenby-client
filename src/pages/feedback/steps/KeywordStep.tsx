@@ -1,15 +1,16 @@
 import { useState } from "react";
-import { Button, KeywordChip, ProgressBar } from "@/shared/components";
+import { Button, Header, KeywordChip, ProgressBar } from "@/shared/components";
 import { KEYWORD_ROUNDS } from "../constants";
 
 interface KeywordStepProps {
 	recipientName: string;
 	selectedKeywords: string[];
 	onToggle: (keyword: string) => void;
+	onBack: () => void;
 	onNext: () => void;
 }
 
-export function KeywordStep({ recipientName, selectedKeywords, onToggle, onNext }: KeywordStepProps) {
+export function KeywordStep({ recipientName, selectedKeywords, onToggle, onBack, onNext }: KeywordStepProps) {
 	const [roundIndex, setRoundIndex] = useState(0);
 	const round = KEYWORD_ROUNDS[roundIndex];
 
@@ -24,9 +25,18 @@ export function KeywordStep({ recipientName, selectedKeywords, onToggle, onNext 
 		}
 	};
 
+	const handleBack = () => {
+		if (roundIndex > 0) {
+			setRoundIndex((i) => i - 1);
+		} else {
+			onBack();
+		}
+	};
+
 	return (
 		<div className="min-h-screen flex flex-col bg-white text-left">
-			<div className="px-5 pt-8">
+			<Header onBack={handleBack} />
+			<div className="px-5">
 				<ProgressBar step={roundIndex + 2} totalSteps={6} />
 			</div>
 

@@ -1,15 +1,17 @@
-import { Button, Input, ProgressBar } from "@/shared/components";
+import { Button, Header, Input, ProgressBar } from "@/shared/components";
 
 interface NicknameStepProps {
 	nickname: string;
 	onChange: (value: string) => void;
+	onBack: () => void;
 	onNext: () => void;
 }
 
-export function NicknameStep({ nickname, onChange, onNext }: NicknameStepProps) {
+export function NicknameStep({ nickname, onChange, onBack, onNext }: NicknameStepProps) {
 	return (
 		<div className="min-h-screen flex flex-col bg-white text-left">
-			<div className="px-5 pt-8">
+			<Header onBack={onBack} />
+			<div className="px-5">
 				<ProgressBar step={1} totalSteps={6} />
 			</div>
 

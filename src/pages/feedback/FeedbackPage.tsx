@@ -59,7 +59,14 @@ export function FeedbackPage() {
 	}
 
 	if (step === "nickname") {
-		return <NicknameStep nickname={nickname} onChange={setNickname} onNext={() => setStep("keywords")} />;
+		return (
+			<NicknameStep
+				nickname={nickname}
+				onChange={setNickname}
+				onBack={() => setStep("landing")}
+				onNext={() => setStep("keywords")}
+			/>
+		);
 	}
 
 	if (step === "keywords") {
@@ -68,6 +75,7 @@ export function FeedbackPage() {
 				recipientName={RECIPIENT_NAME}
 				selectedKeywords={selectedKeywords}
 				onToggle={toggleKeyword}
+				onBack={() => setStep("nickname")}
 				onNext={() => setStep("experience")}
 			/>
 		);
@@ -81,6 +89,7 @@ export function FeedbackPage() {
 				onChange={updateExperience}
 				onAdd={addExperience}
 				onDelete={deleteExperience}
+				onBack={() => setStep("keywords")}
 				onNext={() => setStep("thoughts")}
 			/>
 		);
@@ -93,6 +102,7 @@ export function FeedbackPage() {
 				experiences={experiences}
 				thoughts={thoughts}
 				onChange={updateThought}
+				onBack={() => setStep("experience")}
 				onSubmit={() => setStep("completion")}
 			/>
 		);

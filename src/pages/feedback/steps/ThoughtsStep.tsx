@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Button, ProgressBar } from "@/shared/components";
+import { Button, Header, ProgressBar } from "@/shared/components";
 
 interface ThoughtsStepProps {
 	recipientName: string;
 	experiences: string[];
 	thoughts: string[];
 	onChange: (index: number, value: string) => void;
+	onBack: () => void;
 	onSubmit: () => void;
 }
 
@@ -30,14 +31,15 @@ function autoResize(el: HTMLTextAreaElement) {
 	el.style.height = `${el.scrollHeight}px`;
 }
 
-export function ThoughtsStep({ recipientName, experiences, thoughts, onChange, onSubmit }: ThoughtsStepProps) {
+export function ThoughtsStep({ recipientName, experiences, thoughts, onChange, onBack, onSubmit }: ThoughtsStepProps) {
 	const [expandedIndex, setExpandedIndex] = useState(0);
 
 	const filledExperiences = experiences.filter((e) => e.trim());
 
 	return (
 		<div className="min-h-screen flex flex-col bg-white text-left">
-			<div className="px-5 pt-8">
+			<Header onBack={onBack} />
+			<div className="px-5">
 				<ProgressBar step={6} totalSteps={6} />
 			</div>
 
