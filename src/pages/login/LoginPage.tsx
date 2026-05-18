@@ -10,26 +10,34 @@ const SOCIAL_PLATFORMS: {
 	label: string;
 	shortLabel: string;
 	icon: string;
+	isVisible: boolean;
 }[] = [
 	{
 		id: "kakao",
 		label: "카카오로 계속하기",
 		shortLabel: "카카오",
 		icon: kakaoIcon,
+		isVisible: true,
 	},
 	{
 		id: "google",
 		label: "Google로 계속하기",
 		shortLabel: "Google",
 		icon: googleIcon,
+		isVisible: false,
 	},
 	{
 		id: "apple",
 		label: "Apple로 계속하기",
 		shortLabel: "Apple",
 		icon: appleIcon,
+		isVisible: false,
 	},
 ];
+
+const VISIBLE_SOCIAL_PLATFORMS = SOCIAL_PLATFORMS.filter(
+	(platform) => platform.isVisible,
+);
 
 function LoginPage() {
 	const handleSocialLogin = (platform: SocialPlatform) => {
@@ -53,7 +61,7 @@ function LoginPage() {
 
 				<div className="login-actions">
 					<div className="social-login-list">
-						{SOCIAL_PLATFORMS.map((platform) => {
+						{VISIBLE_SOCIAL_PLATFORMS.map((platform) => {
 							const buttonLabel =
 								platform.id === "kakao" ? platform.label : platform.shortLabel;
 
