@@ -14,6 +14,7 @@ export type AuthTokens = {
 };
 
 const AUTH_CALLBACK_PATH = "/auth/callback";
+const tokenExchangeRequests = new Map<string, Promise<AuthTokens>>();
 
 export function getAuthCallbackUrl() {
 	return `${window.location.origin}${AUTH_CALLBACK_PATH}`;
@@ -31,6 +32,19 @@ export function startKakaoLogin() {
 }
 
 export async function exchangeKakaoLoginCode(code: string) {
+	const pendingRequest = tokenExchangeRequests.get(code);
+
+	if (pendingRequest) {
+		return pendingRequest;
+	}
+
+	const request = requestKakaoLoginCodeExchange(code);
+	tokenExchangeRequests.set(code, request);
+
+	return request;
+}
+
+async function requestKakaoLoginCodeExchange(code: string) {
 	const response = await apiClient.post<ApiResponse<AuthTokens>>(
 		"/auth/token",
 		{
