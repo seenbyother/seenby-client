@@ -1,0 +1,53 @@
+.auth-success-page {
+	min-height: 100svh;
+	background: var(--bg);
+	color: var(--text-h);
+}
+
+.auth-success-screen {
+	width: min(100%, 480px);
+	min-height: 100svh;
+	margin: 0 auto;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	padding: 28px;
+	text-align: center;
+}
+
+.auth-success-content {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 14px;
+}
+
+.auth-success-mark {
+	width: 58px;
+	height: 58px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 999px;
+	background: rgba(20, 118, 255, 0.1);
+	color: var(--brand-blue);
+	font-size: 30px;
+	font-weight: 800;
+	line-height: 1;
+}
+
+.auth-success-content h1 {
+	margin: 0;
+	font-size: 26px;
+	font-weight: 800;
+	line-height: 1.35;
+	letter-spacing: 0;
+}
+
+.auth-success-content p {
+	margin: 0;
+	color: var(--text);
+	font-size: 15px;
+	line-height: 1.55;
+	letter-spacing: 0;
+}
