@@ -8,7 +8,6 @@ type ApiResponse<TData> = {
 
 export type AuthTokens = {
 	accessToken: string;
-	refreshToken: string;
 	tokenType: "Bearer" | string;
 	expiresIn: number;
 };
@@ -49,11 +48,29 @@ async function requestKakaoLoginCodeExchange(code: string) {
 		"/auth/token",
 		{
 			body: { code },
+			skipAuth: true,
+			skipAuthRefresh: true,
 		},
 	);
 
 	if (!response.data) {
 		throw new ApiError(400, response, response.message);
+	}
+
+	return response.data;
+}
+
+export async function refreshAccessToken() {
+	const response = await apiClient.post<ApiResponse<AuthTokens>>(
+		"/auth/token/refresh",
+		{
+			skipAuth: true,
+			skipAuthRefresh: true,
+		},
+	);
+
+	if (!response.data) {
+		throw new ApiError(401, response, response.message);
 	}
 
 	return response.data;

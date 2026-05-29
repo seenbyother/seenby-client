@@ -1,3 +1,4 @@
+import { useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { exchangeKakaoLoginCode } from "@/features/auth/api";
@@ -30,6 +31,17 @@ export function AuthCallbackPage() {
 	const [message, setMessage] = useState(
 		"카카오 로그인 정보를 확인하고 있어요.",
 	);
+	const tokenExchangeMutation = useMutation({
+		mutationFn: exchangeKakaoLoginCode,
+		onSuccess: (tokens) => {
+			saveAuthTokens(tokens);
+			navigate("/auth/success", { replace: true });
+		},
+		onError: (error: unknown) => {
+			setStatus("error");
+			setMessage(getErrorMessage(error));
+		},
+	});
 
 	useEffect(() => {
 		const code = searchParams.get("code");
@@ -40,30 +52,8 @@ export function AuthCallbackPage() {
 			return;
 		}
 
-		let isActive = true;
-
-		exchangeKakaoLoginCode(code)
-			.then((tokens) => {
-				if (!isActive) {
-					return;
-				}
-
-				saveAuthTokens(tokens);
-				navigate("/auth/success", { replace: true });
-			})
-			.catch((error: unknown) => {
-				if (!isActive) {
-					return;
-				}
-
-				setStatus("error");
-				setMessage(getErrorMessage(error));
-			});
-
-		return () => {
-			isActive = false;
-		};
-	}, [navigate, searchParams]);
+		tokenExchangeMutation.mutate(code);
+	}, [searchParams, tokenExchangeMutation.mutate]);
 
 	return (
 		<main className="auth-callback-page">

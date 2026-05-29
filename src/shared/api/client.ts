@@ -1,12 +1,29 @@
+import {
+	clearAuthTokens,
+	getAuthorizationHeader,
+	saveAuthTokens,
+} from "@/features/auth/tokenStorage";
 import { API_BASE_URL } from "@/shared/api/config";
 import { ApiError } from "@/shared/api/errors";
 
 type ApiQueryValue = boolean | number | string | null | undefined;
 type ApiQuery = Record<string, ApiQueryValue | ApiQueryValue[]>;
+type ApiResponse<TData> = {
+	statuscode: string;
+	message: string;
+	data: TData | null;
+};
+type AuthTokens = {
+	accessToken: string;
+	tokenType: "Bearer" | string;
+	expiresIn: number;
+};
 
 type RequestOptions = Omit<RequestInit, "body" | "method"> & {
 	body?: unknown;
 	query?: ApiQuery;
+	skipAuth?: boolean;
+	skipAuthRefresh?: boolean;
 };
 
 function buildUrl(path: string, query?: ApiQuery) {
@@ -48,18 +65,62 @@ async function parseResponse(response: Response) {
 async function request<TResponse>(
 	method: string,
 	path: string,
-	{ body, headers, query, ...init }: RequestOptions = {},
+	{
+		body,
+		headers,
+		query,
+		skipAuth,
+		skipAuthRefresh,
+		...init
+	}: RequestOptions = {},
 ): Promise<TResponse> {
-	const response = await fetch(buildUrl(path, query), {
+	const response = await sendRequest(method, path, {
+		body,
+		headers,
+		query,
+		skipAuth,
 		...init,
+	});
+	const shouldRefresh =
+		response.status === 401 && !skipAuthRefresh && !isAuthTokenPath(path);
+
+	if (shouldRefresh && (await refreshStoredAccessToken())) {
+		const retryResponse = await sendRequest(method, path, {
+			body,
+			headers,
+			query,
+			skipAuth,
+			...init,
+		});
+
+		return handleResponse<TResponse>(retryResponse);
+	}
+
+	return handleResponse<TResponse>(response);
+}
+
+async function sendRequest(
+	method: string,
+	path: string,
+	{ body, headers, query, skipAuth, ...init }: RequestOptions,
+) {
+	const authorization = skipAuth ? undefined : getAuthorizationHeader();
+
+	return fetch(buildUrl(path, query), {
+		...init,
+		credentials: init.credentials ?? "include",
 		method,
 		headers: {
 			Accept: "application/json",
 			...(body !== undefined ? { "Content-Type": "application/json" } : {}),
+			...(authorization ? { Authorization: authorization } : {}),
 			...headers,
 		},
 		body: body !== undefined ? JSON.stringify(body) : undefined,
 	});
+}
+
+async function handleResponse<TResponse>(response: Response) {
 	const responseBody = await parseResponse(response);
 
 	if (!response.ok) {
@@ -67,6 +128,38 @@ async function request<TResponse>(
 	}
 
 	return responseBody as TResponse;
+}
+
+function isAuthTokenPath(path: string) {
+	return path === "/auth/token" || path === "/auth/token/refresh";
+}
+
+async function refreshStoredAccessToken() {
+	try {
+		const response = await sendRequest("POST", "/auth/token/refresh", {
+			skipAuth: true,
+			skipAuthRefresh: true,
+		});
+		const responseBody = await parseResponse(response);
+
+		if (!response.ok) {
+			clearAuthTokens();
+			return false;
+		}
+
+		const body = responseBody as ApiResponse<AuthTokens>;
+
+		if (!body.data) {
+			clearAuthTokens();
+			return false;
+		}
+
+		saveAuthTokens(body.data);
+		return true;
+	} catch {
+		clearAuthTokens();
+		return false;
+	}
 }
 
 export const apiClient = {
