@@ -1,4 +1,7 @@
-const DEFAULT_API_BASE_URL = "http://13.210.112.34:8080/api";
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "");
 
-export const API_BASE_URL =
-	import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ?? DEFAULT_API_BASE_URL;
+if (!apiBaseUrl) {
+	throw new Error("VITE_API_BASE_URL is not configured.");
+}
+
+export const API_BASE_URL = apiBaseUrl;

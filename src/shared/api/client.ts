@@ -15,7 +15,6 @@ type ApiResponse<TData> = {
 };
 type AuthTokens = {
 	accessToken: string;
-	tokenType: "Bearer" | string;
 	expiresIn: number;
 };
 

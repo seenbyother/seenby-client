@@ -8,7 +8,6 @@ type ApiResponse<TData> = {
 
 export type AuthTokens = {
 	accessToken: string;
-	tokenType: "Bearer" | string;
 	expiresIn: number;
 };
 
