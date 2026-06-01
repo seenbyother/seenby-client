@@ -1,12 +1,15 @@
 import { BrowserRouter } from "react-router";
+import { QueryProvider } from "@/app/providers/QueryProvider";
 import { AppRoutes } from "@/routes";
 
 export default function App() {
 	return (
-		<BrowserRouter>
-			<div className="max-w-[402px] mx-auto w-full min-h-screen text-left">
-				<AppRoutes />
-			</div>
-		</BrowserRouter>
+		<QueryProvider>
+			<BrowserRouter>
+				<div className="w-full min-h-screen text-left">
+					<AppRoutes />
+				</div>
+			</BrowserRouter>
+		</QueryProvider>
 	);
 }

@@ -1,59 +1,108 @@
-import { useNavigate, useLocation } from "react-router";
-import IcFeedback from "@/assets/icons/ic_person.svg?react";
-import IcHome from "@/assets/icons/ic_home.svg?react";
-import IcGroups from "@/assets/icons/ic_groups.svg?react";
+import { useEffect, useState } from "react";
+import FeedbackIcon from "@/assets/bottombar/feedback.svg?react";
+import HomeIcon from "@/assets/bottombar/home.svg?react";
+import ReportIcon from "@/assets/bottombar/report.svg?react";
 
-type TabKey = "analysis" | "home" | "groups";
+export type BottomNavigationTab = "report" | "home" | "feedback";
 
-const TAB_ROUTES: Record<TabKey, string> = {
-	analysis: "/analysis",
-	home: "/",
-	groups: "/groups",
-};
-
-const TABS: { key: TabKey; Icon: React.FC<React.SVGProps<SVGSVGElement>> }[] = [
-	{ key: "analysis", Icon: IcFeedback },
-	{ key: "home", Icon: IcHome },
-	{ key: "groups", Icon: IcGroups },
-];
-
-function getActiveTab(pathname: string): TabKey {
-	if (pathname.startsWith("/analysis")) return "analysis";
-	if (pathname.startsWith("/groups")) return "groups";
-	return "home";
+interface BottomNavigationProps {
+	activeTab?: BottomNavigationTab;
+	onTabChange?: (tab: BottomNavigationTab) => void;
 }
 
-export function BottomNavigation() {
-	const navigate = useNavigate();
-	const { pathname } = useLocation();
-	const activeTab = getActiveTab(pathname);
+const navigationItems: {
+	tab: BottomNavigationTab;
+	ariaLabel: string;
+	icon: React.ReactNode;
+}[] = [
+	{
+		tab: "report",
+		ariaLabel: "보고서",
+		icon: <ReportIcon aria-hidden="true" />,
+	},
+	{
+		tab: "home",
+		ariaLabel: "홈",
+		icon: <HomeIcon aria-hidden="true" />,
+	},
+	{
+		tab: "feedback",
+		ariaLabel: "피드백",
+		icon: <FeedbackIcon aria-hidden="true" />,
+	},
+];
+
+const DEFAULT_INDICATOR_STEP = 103.5;
+
+export function BottomNavigation({
+	activeTab = "home",
+	onTabChange,
+}: BottomNavigationProps) {
+	const [selectedTab, setSelectedTab] = useState(activeTab);
+	const selectedIndex = navigationItems.findIndex(
+		(item) => item.tab === selectedTab,
+	);
+	const indicatorOffset = Math.max(selectedIndex, 0) * DEFAULT_INDICATOR_STEP;
+
+	useEffect(() => {
+		setSelectedTab(activeTab);
+	}, [activeTab]);
+
+	const selectTab = (tab: BottomNavigationTab) => {
+		setSelectedTab(tab);
+		onTabChange?.(tab);
+	};
 
 	return (
-		<nav className="absolute bottom-0 left-0 right-0 flex justify-center pb-2">
+		<nav
+			aria-label="하단 내비게이션"
+			className="absolute bottom-[25px] left-1/2 flex h-[85px] w-[min(362px,calc(100%-40px))] -translate-x-1/2 select-none items-center justify-between overflow-hidden rounded-full border border-white/35 bg-white/25 px-[30px] py-2 shadow-[inset_0_1px_1px_rgba(255,255,255,0.45),0_14px_34px_rgba(15,23,42,0.06)] backdrop-blur-xl"
+		>
 			<div
-				className="flex justify-between items-center px-[30px] py-2 rounded-[100px] w-full mx-5"
-				style={{ background: "rgba(214,214,214,0.1)" }}
-			>
-				{TABS.map(({ key, Icon }) => {
-					const isActive = activeTab === key;
-					return (
-						<button
-							key={key}
-							type="button"
-							onClick={() => navigate(TAB_ROUTES[key])}
-							className="flex justify-center items-center w-[95px] h-[69px] rounded-[45px] border-none bg-transparent cursor-pointer"
-							style={isActive ? { background: "rgba(85,85,85,0.1)" } : undefined}
-						>
-							<div
-								className="flex justify-center items-center w-[50px] h-[50px] rounded-[35px] bg-white shadow-[2px_4px_15px_0px_rgba(0,0,0,0.05)]"
-								style={{ color: isActive ? "#0073FF" : "#000000" }}
-							>
-								<Icon />
-							</div>
-						</button>
-					);
-				})}
-			</div>
+				aria-hidden="true"
+				className="absolute left-[30px] top-2 h-[69px] w-[95px] rounded-[45px] bg-[#555555]/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.55),inset_0_-14px_24px_rgba(255,255,255,0.24),0_16px_30px_rgba(15,23,42,0.10)] transition-transform duration-300 ease-out"
+				style={{ transform: `translateX(${indicatorOffset}px)` }}
+			/>
+			{navigationItems.map((item) => (
+				<NavItem
+					key={item.tab}
+					ariaLabel={item.ariaLabel}
+					selected={selectedTab === item.tab}
+					onClick={() => selectTab(item.tab)}
+				>
+					{item.icon}
+				</NavItem>
+			))}
 		</nav>
+	);
+}
+
+interface NavItemProps {
+	ariaLabel: string;
+	children: React.ReactNode;
+	selected: boolean;
+	onClick: () => void;
+}
+
+function NavItem({ ariaLabel, children, selected, onClick }: NavItemProps) {
+	return (
+		<button
+			type="button"
+			aria-label={ariaLabel}
+			aria-current={selected ? "page" : undefined}
+			onClick={onClick}
+			className="relative z-10 flex h-[69px] w-[95px] items-center justify-center rounded-[45px] border-0 bg-transparent p-[10px]"
+		>
+			<span
+				className={[
+					"flex h-[50px] w-[50px] items-center justify-center rounded-full transition-all duration-300 ease-out",
+					selected
+						? "bg-white text-[#0073FF] shadow-[0_10px_22px_rgba(15,23,42,0.12),inset_0_1px_0_rgba(255,255,255,0.9)]"
+						: "bg-white/72 text-[#222222] shadow-[0_8px_18px_rgba(15,23,42,0.08)]",
+				].join(" ")}
+			>
+				{children}
+			</span>
+		</button>
 	);
 }
