@@ -1,9 +1,11 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import IcArrowLeft from "@/assets/ic_arrow_left.svg?react";
 import linkCharacter from "@/assets/images/link.png";
 import kakaoIcon from "@/assets/kakao.svg";
 import LinkIcon from "@/assets/link.svg?react";
+import { GroupCreateHeader } from "@/pages/feedback-group/_components/GroupCreateHeader";
+import { ShareButton } from "@/pages/feedback-group/_components/ShareButton";
+import { StepTitle } from "@/pages/feedback-group/_components/StepTitle";
 import { Button, Input, KeywordChip } from "@/shared/components";
 
 type CreateStep = "name" | "relation" | "complete";
@@ -81,7 +83,9 @@ export function FeedbackGroupCreatePage() {
 						/>
 
 						<div className="mt-[30px]">
-							<FieldLabel>그룹 이름</FieldLabel>
+							<p className="mb-2 mt-0 block text-[14px] font-medium leading-[150%] text-black">
+								그룹 이름
+							</p>
 							<Input value={groupName} onChange={setGroupName} />
 						</div>
 					</div>
@@ -103,7 +107,9 @@ export function FeedbackGroupCreatePage() {
 						/>
 
 						<div className="mt-[30px]">
-							<FieldLabel>그룹 관계</FieldLabel>
+							<p className="mb-2 mt-0 block text-[14px] font-medium leading-[150%] text-black">
+								그룹 관계
+							</p>
 							<div className="w-full h-[52px] rounded-xl bg-[#F3F4F6] px-4 py-2 flex items-center text-[20px] font-medium leading-[150%] text-black">
 								{relation}
 							</div>
@@ -169,82 +175,5 @@ export function FeedbackGroupCreatePage() {
 				</>
 			)}
 		</div>
-	);
-}
-
-interface GroupCreateHeaderProps {
-	onBack: () => void;
-}
-
-function GroupCreateHeader({ onBack }: GroupCreateHeaderProps) {
-	return (
-		<header className="h-[68px] pt-6 flex items-center justify-center px-5 relative shrink-0">
-			<button
-				type="button"
-				onClick={onBack}
-				aria-label="뒤로 가기"
-				className="absolute left-5 top-[46px] -translate-y-1/2 w-6 h-6 p-0 border-0 bg-transparent cursor-pointer flex items-center justify-center"
-			>
-				<IcArrowLeft width={24} height={24} />
-			</button>
-			<h2 className="m-0 text-[20px] font-normal leading-none text-black">
-				피드백 그룹 만들기
-			</h2>
-		</header>
-	);
-}
-
-interface StepTitleProps {
-	title: string;
-	description: string;
-}
-
-function StepTitle({ title, description }: StepTitleProps) {
-	return (
-		<div className="flex flex-col gap-2">
-			<h1 className="m-0 text-[28px] font-semibold leading-[160%] tracking-[-0.02em] text-black">
-				{title}
-			</h1>
-			<p className="m-0 text-[16px] font-medium leading-[150%] text-[#71717A]">
-				{description}
-			</p>
-		</div>
-	);
-}
-
-interface FieldLabelProps {
-	children: React.ReactNode;
-}
-
-function FieldLabel({ children }: FieldLabelProps) {
-	return (
-		<p className="mb-2 mt-0 block text-[14px] font-medium leading-[150%] text-black">
-			{children}
-		</p>
-	);
-}
-
-interface ShareButtonProps {
-	children: React.ReactNode;
-	onClick: () => void;
-	variant?: "default" | "kakao";
-}
-
-function ShareButton({
-	children,
-	onClick,
-	variant = "default",
-}: ShareButtonProps) {
-	return (
-		<button
-			type="button"
-			onClick={onClick}
-			className={[
-				"h-14 w-full rounded-lg border-0 px-4 py-[10px] flex items-center justify-center gap-2 cursor-pointer text-[#17181A] text-[15px] font-black leading-[160%] tracking-[-0.02em]",
-				variant === "kakao" ? "bg-[#FEE500]" : "bg-white",
-			].join(" ")}
-		>
-			{children}
-		</button>
 	);
 }

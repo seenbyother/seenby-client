@@ -4,6 +4,9 @@ import { AuthSuccessPage } from "@/pages/auth/AuthSuccessPage";
 import { FeedbackPage } from "@/pages/feedback/FeedbackPage";
 import { FeedbackDetailPage } from "@/pages/feedback-detail/FeedbackDetailPage";
 import { FeedbackGroupCreatePage } from "@/pages/feedback-group/FeedbackGroupCreatePage";
+import { GroupAnalysisPage } from "@/pages/groups/GroupAnalysisPage";
+import { GroupDetailPage } from "@/pages/groups/GroupDetailPage";
+import { GroupsPage } from "@/pages/groups/GroupsPage";
 import { HomePage } from "@/pages/home/HomePage";
 import LoginPage from "@/pages/login/LoginPage";
 
@@ -49,6 +52,30 @@ export function AppRoutes() {
 				element={
 					<WebViewShell>
 						<FeedbackDetailPage />
+					</WebViewShell>
+				}
+			/>
+			<Route
+				path="/groups"
+				element={
+					<WebViewShell>
+						<GroupsPage />
+					</WebViewShell>
+				}
+			/>
+			<Route
+				path="/groups/:groupId"
+				element={
+					<WebViewShell>
+						<GroupDetailPage />
+					</WebViewShell>
+				}
+			/>
+			<Route
+				path="/groups/:groupId/analysis"
+				element={
+					<WebViewShell>
+						<GroupAnalysisPage />
 					</WebViewShell>
 				}
 			/>
