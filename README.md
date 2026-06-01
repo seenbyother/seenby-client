@@ -15,7 +15,16 @@ Seenby는 타인의 경험을 통해 나에 대한 새로운 인사이트를 제
 
 ```bash
 npm install
+cp .env.example .env
 npm run dev
+```
+
+## API
+
+API requests use `VITE_API_BASE_URL`.
+
+```bash
+VITE_API_BASE_URL=http://13.210.112.34:8080/api
 ```
 
 ## Scripts

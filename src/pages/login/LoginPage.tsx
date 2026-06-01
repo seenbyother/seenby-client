@@ -1,6 +1,7 @@
 import appleIcon from "@/assets/apple.svg";
 import googleIcon from "@/assets/google.svg";
 import kakaoIcon from "@/assets/kakao.svg";
+import { startKakaoLogin } from "@/features/auth/api";
 import "./LoginPage.css";
 
 type SocialPlatform = "kakao" | "google" | "apple";
@@ -41,8 +42,9 @@ const VISIBLE_SOCIAL_PLATFORMS = SOCIAL_PLATFORMS.filter(
 
 function LoginPage() {
 	const handleSocialLogin = (platform: SocialPlatform) => {
-		console.log(`${platform} login`);
-		window.alert("SNS 로그인 연동 전 UI 확인용 버튼입니다.");
+		if (platform === "kakao") {
+			startKakaoLogin();
+		}
 	};
 
 	const handleTermsClick = (type: "terms" | "privacy") => {
