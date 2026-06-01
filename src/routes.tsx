@@ -2,6 +2,7 @@ import { Route, Routes } from "react-router";
 import { AuthCallbackPage } from "@/pages/auth/AuthCallbackPage";
 import { AuthSuccessPage } from "@/pages/auth/AuthSuccessPage";
 import { FeedbackPage } from "@/pages/feedback/FeedbackPage";
+import { GroupsPage } from "@/pages/groups/GroupsPage";
 import { FeedbackGroupCreatePage } from "@/pages/feedback-group/FeedbackGroupCreatePage";
 import { HomePage } from "@/pages/home/HomePage";
 import LoginPage from "@/pages/login/LoginPage";
@@ -9,6 +10,8 @@ import LoginPage from "@/pages/login/LoginPage";
 export function AppRoutes() {
 	return (
 		<Routes>
+			<Route path="/feedback" element={<FeedbackPage />} />
+			<Route path="/groups" element={<GroupsPage />} />
 			<Route path="/" element={<HomePage />} />
 			<Route path="/home" element={<HomePage />} />
 			<Route
