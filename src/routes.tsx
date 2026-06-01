@@ -45,7 +45,7 @@ export function AppRoutes() {
 				}
 			/>
 			<Route
-				path="/feedback/detail"
+				path="/feedback/detail/:answerId"
 				element={
 					<WebViewShell>
 						<FeedbackDetailPage />

@@ -5,7 +5,7 @@ import CloseIcon from "@/assets/feedback/close.svg?react";
 import InfoIcon from "@/assets/feedback/info.svg?react";
 import type { ExperienceFeedback } from "@/pages/feedback-detail/types";
 
-interface RetrospectSheetProps {
+interface RetrospectiveSheetProps {
 	isOpen: boolean;
 	experienceFeedback: ExperienceFeedback | null;
 	value: string;
@@ -14,14 +14,14 @@ interface RetrospectSheetProps {
 	onSave: () => void;
 }
 
-export function RetrospectSheet({
+export function RetrospectiveSheet({
 	isOpen,
 	experienceFeedback,
 	value,
 	onChange,
 	onClose,
 	onSave,
-}: RetrospectSheetProps) {
+}: RetrospectiveSheetProps) {
 	const [dragOffset, setDragOffset] = useState(0);
 	const [isDragging, setIsDragging] = useState(false);
 	const [isGuideOpen, setIsGuideOpen] = useState(false);
@@ -120,7 +120,7 @@ export function RetrospectSheet({
 					<button
 						type="button"
 						onClick={() => setIsGuideOpen((current) => !current)}
-						aria-controls="retrospect-guide"
+						aria-controls="retrospective-guide"
 						aria-expanded={isGuideOpen}
 						aria-label="회고 작성 안내"
 						className="flex h-6 w-6 items-center justify-center border-0 bg-transparent p-0"
@@ -139,7 +139,7 @@ export function RetrospectSheet({
 			</div>
 			{isGuideOpen ? (
 				<div
-					id="retrospect-guide"
+					id="retrospective-guide"
 					className="mx-[23px] mt-5 rounded-2xl bg-[#F3F4F6] px-4 py-3 text-[14px] leading-[1.5] text-[#4B5563]"
 				>
 					<p className="m-0 font-semibold text-black">
@@ -152,11 +152,11 @@ export function RetrospectSheet({
 					</ul>
 				</div>
 			) : null}
-			<label className="sr-only" htmlFor="retrospect-editor">
+			<label className="sr-only" htmlFor="retrospective-editor">
 				회고 내용
 			</label>
 			<textarea
-				id="retrospect-editor"
+				id="retrospective-editor"
 				value={value}
 				onChange={(event) => onChange(event.target.value)}
 				placeholder="나의 회고를 작성해보세요."

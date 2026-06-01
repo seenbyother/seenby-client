@@ -1,4 +1,4 @@
-export interface FeedbackAnswer {
+export interface FeedbackAnswerDetail {
 	id: number;
 	feedbackGroupId: number;
 	reviewerName: string;

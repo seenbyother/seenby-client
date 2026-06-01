@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import BackIcon from "@/assets/feedback/before.svg?react";
 import { ExperienceCard } from "@/pages/feedback-detail/_components/ExperienceCard";
-import { RetrospectCard } from "@/pages/feedback-detail/_components/RetrospectCard";
-import { RetrospectSheet } from "@/pages/feedback-detail/_components/RetrospectSheet";
-import type { FeedbackAnswer } from "@/pages/feedback-detail/types";
+import { RetrospectiveCard } from "@/pages/feedback-detail/_components/RetrospectiveCard";
+import { RetrospectiveSheet } from "@/pages/feedback-detail/_components/RetrospectiveSheet";
+import type { FeedbackAnswerDetail } from "@/pages/feedback-detail/types";
 
-const feedbackAnswer: FeedbackAnswer = {
+const feedbackAnswerDetail: FeedbackAnswerDetail = {
 	id: 4,
 	feedbackGroupId: 4,
 	reviewerName: "김연우",
@@ -55,9 +55,13 @@ const feedbackAnswer: FeedbackAnswer = {
 	createdAt: "2026-04-27T00:00:00",
 };
 
+const feedbackAnswerDetailsByAnswerId: Record<number, FeedbackAnswerDetail> = {
+	[feedbackAnswerDetail.id]: feedbackAnswerDetail,
+};
+
 const RECIPIENT_NAME = "김민경";
 
-const initialRetrospectsByExperienceFeedbackId: Record<number, string> = {
+const initialRetrospectivesByExperienceFeedbackId: Record<number, string> = {
 	1: "",
 	2: "감사합니다. 나의 회고를 길게 작성하는 더미 텍스트입니다. 감사합니다. 나의 회고를 길게 작성하는 더미 텍스트입니다.",
 	3: "",
@@ -67,10 +71,14 @@ const initialRetrospectsByExperienceFeedbackId: Record<number, string> = {
 
 export function FeedbackDetailPage() {
 	const navigate = useNavigate();
+	const { answerId } = useParams<{ answerId: string }>();
+	const currentAnswerId = Number(answerId ?? String(feedbackAnswerDetail.id));
+	const currentFeedbackAnswerDetail =
+		feedbackAnswerDetailsByAnswerId[currentAnswerId] ?? feedbackAnswerDetail;
 	const [
-		retrospectsByExperienceFeedbackId,
-		setRetrospectsByExperienceFeedbackId,
-	] = useState(initialRetrospectsByExperienceFeedbackId);
+		retrospectivesByExperienceFeedbackId,
+		setRetrospectivesByExperienceFeedbackId,
+	] = useState(initialRetrospectivesByExperienceFeedbackId);
 	const [editingExperienceFeedbackId, setEditingExperienceFeedbackId] =
 		useState<number | null>(null);
 	const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -78,28 +86,28 @@ export function FeedbackDetailPage() {
 	const activeExperienceFeedback =
 		editingExperienceFeedbackId === null
 			? null
-			: (feedbackAnswer.experienceFeedbacks.find(
+			: (currentFeedbackAnswerDetail.experienceFeedbacks.find(
 					(item) => item.id === editingExperienceFeedbackId,
 				) ?? null);
-	const activeRetrospect = activeExperienceFeedback
-		? (retrospectsByExperienceFeedbackId[activeExperienceFeedback.id] ?? "")
+	const activeRetrospective = activeExperienceFeedback
+		? (retrospectivesByExperienceFeedbackId[activeExperienceFeedback.id] ?? "")
 		: "";
 
-	const openRetrospectEditor = (experienceFeedbackId: number) => {
+	const openRetrospectiveEditor = (experienceFeedbackId: number) => {
 		setEditingExperienceFeedbackId(experienceFeedbackId);
 		setIsSheetOpen(true);
 	};
 
-	const updateRetrospect = (value: string) => {
+	const updateRetrospective = (value: string) => {
 		if (editingExperienceFeedbackId === null) return;
 
-		setRetrospectsByExperienceFeedbackId((current) => ({
+		setRetrospectivesByExperienceFeedbackId((current) => ({
 			...current,
 			[editingExperienceFeedbackId]: value,
 		}));
 	};
 
-	const saveRetrospect = () => {
+	const saveRetrospective = () => {
 		setIsSheetOpen(false);
 		setEditingExperienceFeedbackId(null);
 	};
@@ -112,7 +120,7 @@ export function FeedbackDetailPage() {
 		year: "numeric",
 		month: "2-digit",
 		day: "2-digit",
-	}).format(new Date(feedbackAnswer.submittedAt));
+	}).format(new Date(currentFeedbackAnswerDetail.submittedAt));
 
 	return (
 		<main className="min-h-screen bg-[#F8F8F8] text-left text-black">
@@ -131,7 +139,7 @@ export function FeedbackDetailPage() {
 
 					<section className="mb-6 flex items-end justify-between">
 						<h1 className="m-0 text-[24px] font-bold leading-none">
-							{feedbackAnswer.reviewerName} 님의 피드백
+							{currentFeedbackAnswerDetail.reviewerName} 님의 피드백
 						</h1>
 						<p className="m-0 text-center text-[12px] leading-none text-[#696969]">
 							{submittedDate}
@@ -143,7 +151,7 @@ export function FeedbackDetailPage() {
 							{RECIPIENT_NAME} 님에게 어울리는 단어
 						</h2>
 						<div className="mt-3 grid grid-cols-4 gap-3">
-							{feedbackAnswer.keywords.map((keyword) => (
+							{currentFeedbackAnswerDetail.keywords.map((keyword) => (
 								<span
 									key={keyword}
 									className="flex h-8 items-center justify-center whitespace-nowrap rounded-[20px] border border-[rgba(0,115,255,0.1)] bg-[rgba(0,115,255,0.05)] px-[10px] text-[13px] font-semibold leading-none text-[#0073FF]"
@@ -155,49 +163,54 @@ export function FeedbackDetailPage() {
 					</section>
 
 					<p className="my-6 text-right text-[12px] leading-none text-[#696969]">
-						총 {feedbackAnswer.experienceCount}개
+						총 {currentFeedbackAnswerDetail.experienceCount}개
 					</p>
 
 					<div className="flex flex-col gap-6">
-						{feedbackAnswer.experienceFeedbacks.map((experienceFeedback) => (
-							<section
-								key={experienceFeedback.id}
-								className="flex flex-col gap-5"
-							>
-								<ExperienceCard
-									experienceFeedback={experienceFeedback}
-									recipientName={RECIPIENT_NAME}
-								/>
-								<RetrospectCard
-									experienceFeedback={experienceFeedback}
-									retrospect={
-										retrospectsByExperienceFeedbackId[experienceFeedback.id] ??
-										""
-									}
-									isEditing={
-										editingExperienceFeedbackId === experienceFeedback.id &&
-										isSheetOpen
-									}
-									onToggleEdit={() =>
-										editingExperienceFeedbackId === experienceFeedback.id &&
-										isSheetOpen
-											? saveRetrospect()
-											: openRetrospectEditor(experienceFeedback.id)
-									}
-									onOpen={() => openRetrospectEditor(experienceFeedback.id)}
-								/>
-							</section>
-						))}
+						{currentFeedbackAnswerDetail.experienceFeedbacks.map(
+							(experienceFeedback) => (
+								<section
+									key={experienceFeedback.id}
+									className="flex flex-col gap-5"
+								>
+									<ExperienceCard
+										experienceFeedback={experienceFeedback}
+										recipientName={RECIPIENT_NAME}
+									/>
+									<RetrospectiveCard
+										experienceFeedback={experienceFeedback}
+										retrospective={
+											retrospectivesByExperienceFeedbackId[
+												experienceFeedback.id
+											] ?? ""
+										}
+										isEditing={
+											editingExperienceFeedbackId === experienceFeedback.id &&
+											isSheetOpen
+										}
+										onToggleEdit={() =>
+											editingExperienceFeedbackId === experienceFeedback.id &&
+											isSheetOpen
+												? saveRetrospective()
+												: openRetrospectiveEditor(experienceFeedback.id)
+										}
+										onOpen={() =>
+											openRetrospectiveEditor(experienceFeedback.id)
+										}
+									/>
+								</section>
+							),
+						)}
 					</div>
 				</div>
 
-				<RetrospectSheet
+				<RetrospectiveSheet
 					isOpen={isSheetOpen}
 					experienceFeedback={activeExperienceFeedback}
-					value={activeRetrospect}
-					onChange={updateRetrospect}
+					value={activeRetrospective}
+					onChange={updateRetrospective}
 					onClose={closeSheet}
-					onSave={saveRetrospect}
+					onSave={saveRetrospective}
 				/>
 			</div>
 		</main>

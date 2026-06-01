@@ -1,21 +1,21 @@
 import type { ExperienceFeedback } from "@/pages/feedback-detail/types";
 
-interface RetrospectCardProps {
+interface RetrospectiveCardProps {
 	experienceFeedback: ExperienceFeedback;
-	retrospect: string;
+	retrospective: string;
 	isEditing: boolean;
 	onOpen: () => void;
 	onToggleEdit: () => void;
 }
 
-export function RetrospectCard({
+export function RetrospectiveCard({
 	experienceFeedback,
-	retrospect,
+	retrospective,
 	isEditing,
 	onOpen,
 	onToggleEdit,
-}: RetrospectCardProps) {
-	const hasRetrospect = retrospect.trim().length > 0;
+}: RetrospectiveCardProps) {
+	const hasRetrospective = retrospective.trim().length > 0;
 	const experienceNumber = experienceFeedback.displayOrder + 1;
 
 	return (
@@ -44,9 +44,9 @@ export function RetrospectCard({
 						isEditing ? "min-h-[228px] bg-[#F3F4F6]" : "bg-transparent px-0",
 					].join(" ")}
 				>
-					{hasRetrospect ? (
+					{hasRetrospective ? (
 						<span className="block whitespace-pre-wrap break-keep">
-							{retrospect}
+							{retrospective}
 						</span>
 					) : (
 						<span className="block text-[#696969]">-</span>
