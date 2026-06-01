@@ -24,8 +24,23 @@ export function RetrospectSheet({
 }: RetrospectSheetProps) {
 	const [dragOffset, setDragOffset] = useState(0);
 	const [isDragging, setIsDragging] = useState(false);
+	const [isGuideOpen, setIsGuideOpen] = useState(false);
 	const dragStartYRef = useRef<number | null>(null);
 	const dragOffsetRef = useRef(0);
+
+	const closeGuide = () => {
+		setIsGuideOpen(false);
+	};
+
+	const closeSheet = () => {
+		closeGuide();
+		onClose();
+	};
+
+	const saveSheet = () => {
+		closeGuide();
+		onSave();
+	};
 
 	const beginDrag = (event: PointerEvent<HTMLDivElement>) => {
 		if (!isOpen) return;
@@ -54,7 +69,7 @@ export function RetrospectSheet({
 		setDragOffset(0);
 
 		if (shouldClose) {
-			onClose();
+			closeSheet();
 			return;
 		}
 	};
@@ -63,7 +78,7 @@ export function RetrospectSheet({
 		<section
 			aria-label="회고 작성하기"
 			className={[
-				"absolute bottom-0 left-0 z-30 h-[436px] w-full rounded-t-[40px] bg-white shadow-[0_-2px_6.2px_rgba(0,0,0,0.13)]",
+				"absolute bottom-0 left-0 z-30 flex h-[436px] w-full flex-col rounded-t-[40px] bg-white shadow-[0_-2px_6.2px_rgba(0,0,0,0.13)]",
 				isDragging
 					? "transition-none"
 					: "transition-transform duration-300 ease-out",
@@ -85,7 +100,7 @@ export function RetrospectSheet({
 			<div className="mt-3 flex h-6 items-center justify-between px-[23px]">
 				<button
 					type="button"
-					onClick={onClose}
+					onClick={closeSheet}
 					aria-label="회고 작성 닫기"
 					className="flex h-6 w-6 items-center justify-center border-0 bg-transparent p-0"
 				>
@@ -102,10 +117,19 @@ export function RetrospectSheet({
 					) : null}
 				</div>
 				<div className="flex items-center gap-[10px]">
-					<InfoIcon aria-hidden="true" className="h-[21px] w-[21px]" />
 					<button
 						type="button"
-						onClick={onSave}
+						onClick={() => setIsGuideOpen((current) => !current)}
+						aria-controls="retrospect-guide"
+						aria-expanded={isGuideOpen}
+						aria-label="회고 작성 안내"
+						className="flex h-6 w-6 items-center justify-center border-0 bg-transparent p-0"
+					>
+						<InfoIcon aria-hidden="true" className="h-[21px] w-[21px]" />
+					</button>
+					<button
+						type="button"
+						onClick={saveSheet}
 						aria-label="회고 저장하기"
 						className="flex h-6 w-6 items-center justify-center border-0 bg-transparent p-0"
 					>
@@ -113,6 +137,21 @@ export function RetrospectSheet({
 					</button>
 				</div>
 			</div>
+			{isGuideOpen ? (
+				<div
+					id="retrospect-guide"
+					className="mx-[23px] mt-5 rounded-2xl bg-[#F3F4F6] px-4 py-3 text-[14px] leading-[1.5] text-[#4B5563]"
+				>
+					<p className="m-0 font-semibold text-black">
+						어떤 점을 돌아보면 좋을까요?
+					</p>
+					<ul className="m-0 mt-2 list-disc space-y-1 pl-5">
+						<li>이 피드백을 보고 새롭게 알게 된 점</li>
+						<li>다음에 더 잘해보고 싶은 행동</li>
+						<li>계속 유지하고 싶은 나의 강점</li>
+					</ul>
+				</div>
+			) : null}
 			<label className="sr-only" htmlFor="retrospect-editor">
 				회고 내용
 			</label>
@@ -121,7 +160,7 @@ export function RetrospectSheet({
 				value={value}
 				onChange={(event) => onChange(event.target.value)}
 				placeholder="나의 회고를 작성해보세요."
-				className="mt-[30px] h-[320px] w-full resize-none border-0 bg-transparent px-[39px] text-[20px] leading-[1.5] text-[#4B5563] outline-none placeholder:text-[#D1D5DB]"
+				className="mt-[30px] min-h-0 flex-1 w-full resize-none border-0 bg-transparent px-[39px] pb-8 text-[20px] leading-[1.5] text-[#4B5563] outline-none placeholder:text-[#D1D5DB]"
 			/>
 		</section>
 	);
