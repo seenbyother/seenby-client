@@ -6,7 +6,7 @@ export default function App() {
 	return (
 		<QueryProvider>
 			<BrowserRouter>
-				<div className="max-w-[402px] mx-auto w-full min-h-screen text-left">
+				<div className="w-full min-h-screen text-left">
 					<AppRoutes />
 				</div>
 			</BrowserRouter>
