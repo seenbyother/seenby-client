@@ -1,6 +1,8 @@
+import { useNavigate } from "react-router";
 import appleIcon from "@/assets/apple.svg";
 import googleIcon from "@/assets/google.svg";
 import kakaoIcon from "@/assets/kakao.svg";
+import { startKakaoLogin } from "@/features/auth/api";
 import "./LoginPage.css";
 
 type SocialPlatform = "kakao" | "google" | "apple";
@@ -40,9 +42,12 @@ const VISIBLE_SOCIAL_PLATFORMS = SOCIAL_PLATFORMS.filter(
 );
 
 function LoginPage() {
+	const navigate = useNavigate();
+
 	const handleSocialLogin = (platform: SocialPlatform) => {
-		console.log(`${platform} login`);
-		window.alert("SNS 로그인 연동 전 UI 확인용 버튼입니다.");
+		if (platform === "kakao") {
+			startKakaoLogin();
+		}
 	};
 
 	const handleTermsClick = (type: "terms" | "privacy") => {
@@ -60,6 +65,14 @@ function LoginPage() {
 				</div>
 
 				<div className="login-actions">
+					<button
+						className="group-create-button"
+						onClick={() => navigate("/feedback-group/create")}
+						type="button"
+					>
+						피드백 그룹 만들기
+					</button>
+
 					<div className="social-login-list">
 						{VISIBLE_SOCIAL_PLATFORMS.map((platform) => {
 							const buttonLabel =
