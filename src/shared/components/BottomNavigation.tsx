@@ -29,7 +29,7 @@ export function BottomNavigation() {
 	const activeTab = getActiveTab(pathname);
 
 	return (
-		<nav className="absolute bottom-0 left-0 right-0 flex justify-center pb-2">
+		<nav className="fixed bottom-0 left-0 right-0 flex justify-center pb-2">
 			<div
 				className="flex justify-between items-center px-[30px] py-2 rounded-[100px] w-full mx-5"
 				style={{ background: "rgba(214,214,214,0.1)" }}
