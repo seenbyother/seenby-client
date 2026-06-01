@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 import FeedbackIcon from "@/assets/bottombar/feedback.svg?react";
 import HomeIcon from "@/assets/bottombar/home.svg?react";
 import ReportIcon from "@/assets/bottombar/report.svg?react";
@@ -38,6 +39,7 @@ export function BottomNavigation({
 	activeTab = "home",
 	onTabChange,
 }: BottomNavigationProps) {
+	const navigate = useNavigate();
 	const [selectedTab, setSelectedTab] = useState(activeTab);
 	const selectedIndex = navigationItems.findIndex(
 		(item) => item.tab === selectedTab,
@@ -50,7 +52,19 @@ export function BottomNavigation({
 
 	const selectTab = (tab: BottomNavigationTab) => {
 		setSelectedTab(tab);
-		onTabChange?.(tab);
+
+		if (onTabChange) {
+			onTabChange(tab);
+			return;
+		}
+
+		if (tab === "home") {
+			navigate("/home");
+		}
+
+		if (tab === "feedback") {
+			navigate("/feedback/detail/4");
+		}
 	};
 
 	return (
