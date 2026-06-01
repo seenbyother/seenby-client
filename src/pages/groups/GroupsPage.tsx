@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import IcArrowLeft from "@/assets/ic_arrow_left.svg?react";
 import IcPlus from "@/assets/icons/ic_plus.svg?react";
 import { BottomNavigation } from "@/shared/components";
@@ -30,6 +31,7 @@ const MOCK_GROUPS: Group[] = [
 const FILTER_TABS: FilterTab[] = ["전체", "진행중", "종료"];
 
 export function GroupsPage() {
+	const navigate = useNavigate();
 	const [activeTab, setActiveTab] = useState<FilterTab>("전체");
 	const [groups] = useState<Group[]>(MOCK_GROUPS);
 
@@ -74,14 +76,14 @@ export function GroupsPage() {
 				) : (
 					<div className="flex flex-col gap-3">
 						{filteredGroups.map((group) => (
-							<GroupCard key={group.id} group={group} />
+							<GroupCard key={group.id} group={group} onClick={() => navigate(`/groups/${group.id}`)} />
 						))}
 					</div>
 				)}
 			</main>
 
 			{/* FAB */}
-			<div className="absolute bottom-28 right-5">
+			<div className="fixed bottom-28 right-5">
 				<button
 					type="button"
 					className="flex items-center gap-2.5 px-5 py-4 rounded-[60px] bg-[#0073FF] border-none cursor-pointer"
