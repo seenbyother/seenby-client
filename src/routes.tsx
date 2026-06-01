@@ -2,6 +2,8 @@ import { Route, Routes } from "react-router";
 import { AuthCallbackPage } from "@/pages/auth/AuthCallbackPage";
 import { AuthSuccessPage } from "@/pages/auth/AuthSuccessPage";
 import { FeedbackPage } from "@/pages/feedback/FeedbackPage";
+import { GroupAnalysisPage } from "@/pages/groups/GroupAnalysisPage";
+import { GroupDetailPage } from "@/pages/groups/GroupDetailPage";
 import { GroupsPage } from "@/pages/groups/GroupsPage";
 import { FeedbackGroupCreatePage } from "@/pages/feedback-group/FeedbackGroupCreatePage";
 import { HomePage } from "@/pages/home/HomePage";
@@ -12,6 +14,8 @@ export function AppRoutes() {
 		<Routes>
 			<Route path="/feedback" element={<FeedbackPage />} />
 			<Route path="/groups" element={<GroupsPage />} />
+			<Route path="/groups/:groupId" element={<GroupDetailPage />} />
+			<Route path="/groups/:groupId/analysis" element={<GroupAnalysisPage />} />
 			<Route path="/" element={<HomePage />} />
 			<Route path="/home" element={<HomePage />} />
 			<Route
