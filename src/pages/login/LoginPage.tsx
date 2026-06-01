@@ -1,4 +1,3 @@
-import { useNavigate } from "react-router";
 import appleIcon from "@/assets/apple.svg";
 import googleIcon from "@/assets/google.svg";
 import kakaoIcon from "@/assets/kakao.svg";
@@ -42,8 +41,6 @@ const VISIBLE_SOCIAL_PLATFORMS = SOCIAL_PLATFORMS.filter(
 );
 
 function LoginPage() {
-	const navigate = useNavigate();
-
 	const handleSocialLogin = (platform: SocialPlatform) => {
 		if (platform === "kakao") {
 			startKakaoLogin();
@@ -65,14 +62,6 @@ function LoginPage() {
 				</div>
 
 				<div className="login-actions">
-					<button
-						className="group-create-button"
-						onClick={() => navigate("/feedback-group/create")}
-						type="button"
-					>
-						피드백 그룹 만들기
-					</button>
-
 					<div className="social-login-list">
 						{VISIBLE_SOCIAL_PLATFORMS.map((platform) => {
 							const buttonLabel =
