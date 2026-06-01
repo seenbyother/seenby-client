@@ -2,6 +2,7 @@ import { Route, Routes } from "react-router";
 import { AuthCallbackPage } from "@/pages/auth/AuthCallbackPage";
 import { AuthSuccessPage } from "@/pages/auth/AuthSuccessPage";
 import { FeedbackPage } from "@/pages/feedback/FeedbackPage";
+import { FeedbackDetailPage } from "@/pages/feedback-detail/FeedbackDetailPage";
 import { FeedbackGroupCreatePage } from "@/pages/feedback-group/FeedbackGroupCreatePage";
 import { HomePage } from "@/pages/home/HomePage";
 import LoginPage from "@/pages/login/LoginPage";
@@ -40,6 +41,14 @@ export function AppRoutes() {
 				element={
 					<WebViewShell>
 						<FeedbackPage />
+					</WebViewShell>
+				}
+			/>
+			<Route
+				path="/feedback/detail"
+				element={
+					<WebViewShell>
+						<FeedbackDetailPage />
 					</WebViewShell>
 				}
 			/>
