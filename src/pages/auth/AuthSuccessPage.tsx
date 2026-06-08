@@ -1,3 +1,4 @@
+import { Link } from "react-router";
 import "./AuthSuccessPage.css";
 
 export function AuthSuccessPage() {
@@ -13,6 +14,9 @@ export function AuthSuccessPage() {
 					</div>
 					<h1 id="auth-success-title">로그인 완료</h1>
 					<p>SeenBy에 정상적으로 로그인되었습니다.</p>
+					<Link className="auth-success-action" to="/">
+						홈으로 가기
+					</Link>
 				</div>
 			</section>
 		</main>
