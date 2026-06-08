@@ -2,7 +2,6 @@ import { useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { exchangeKakaoLoginCode } from "@/features/auth/api";
-import { saveAuthTokens } from "@/features/auth/tokenStorage";
 import { ApiError } from "@/shared/api";
 import "./AuthCallbackPage.css";
 
@@ -33,8 +32,7 @@ export function AuthCallbackPage() {
 	);
 	const tokenExchangeMutation = useMutation({
 		mutationFn: exchangeKakaoLoginCode,
-		onSuccess: (tokens) => {
-			saveAuthTokens(tokens);
+		onSuccess: () => {
 			navigate("/auth/success", { replace: true });
 		},
 		onError: (error: unknown) => {

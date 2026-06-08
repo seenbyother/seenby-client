@@ -6,14 +6,14 @@ type ApiResponse<TData> = {
 	data: TData | null;
 };
 
-export type AuthTokens = {
-	accessToken: string;
-	tokenType: "Bearer" | string;
+export type AuthTokenMetadata = {
+	tokenType: string;
 	expiresIn: number;
 };
 
 const AUTH_CALLBACK_PATH = "/auth/callback";
-const tokenExchangeRequests = new Map<string, Promise<AuthTokens>>();
+// TEMP_LOGIN_CODE는 1회용이므로 콜백이 중복 렌더링돼도 같은 코드를 재시도하지 않는다.
+const tokenExchangeRequests = new Map<string, Promise<AuthTokenMetadata>>();
 
 export function getAuthCallbackUrl() {
 	return `${window.location.origin}${AUTH_CALLBACK_PATH}`;
@@ -44,11 +44,10 @@ export async function exchangeKakaoLoginCode(code: string) {
 }
 
 async function requestKakaoLoginCodeExchange(code: string) {
-	const response = await apiClient.post<ApiResponse<AuthTokens>>(
+	const response = await apiClient.post<ApiResponse<AuthTokenMetadata>>(
 		"/auth/token",
 		{
 			body: { code },
-			skipAuth: true,
 			skipAuthRefresh: true,
 		},
 	);
@@ -61,10 +60,9 @@ async function requestKakaoLoginCodeExchange(code: string) {
 }
 
 export async function refreshAccessToken() {
-	const response = await apiClient.post<ApiResponse<AuthTokens>>(
+	const response = await apiClient.post<ApiResponse<AuthTokenMetadata>>(
 		"/auth/token/refresh",
 		{
-			skipAuth: true,
 			skipAuthRefresh: true,
 		},
 	);

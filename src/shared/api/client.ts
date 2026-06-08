@@ -1,8 +1,3 @@
-import {
-	clearAuthTokens,
-	getAuthorizationHeader,
-	saveAuthTokens,
-} from "@/features/auth/tokenStorage";
 import { API_BASE_URL } from "@/shared/api/config";
 import { ApiError } from "@/shared/api/errors";
 
@@ -13,16 +8,15 @@ type ApiResponse<TData> = {
 	message: string;
 	data: TData | null;
 };
-type AuthTokens = {
-	accessToken: string;
-	tokenType: "Bearer" | string;
+type AuthTokenMetadata = {
+	tokenType: string;
 	expiresIn: number;
 };
+let refreshAccessTokenRequest: Promise<boolean> | null = null;
 
 type RequestOptions = Omit<RequestInit, "body" | "method"> & {
 	body?: unknown;
 	query?: ApiQuery;
-	skipAuth?: boolean;
 	skipAuthRefresh?: boolean;
 };
 
@@ -65,20 +59,12 @@ async function parseResponse(response: Response) {
 async function request<TResponse>(
 	method: string,
 	path: string,
-	{
-		body,
-		headers,
-		query,
-		skipAuth,
-		skipAuthRefresh,
-		...init
-	}: RequestOptions = {},
+	{ body, headers, query, skipAuthRefresh, ...init }: RequestOptions = {},
 ): Promise<TResponse> {
 	const response = await sendRequest(method, path, {
 		body,
 		headers,
 		query,
-		skipAuth,
 		...init,
 	});
 	const shouldRefresh =
@@ -89,7 +75,6 @@ async function request<TResponse>(
 			body,
 			headers,
 			query,
-			skipAuth,
 			...init,
 		});
 
@@ -102,10 +87,8 @@ async function request<TResponse>(
 async function sendRequest(
 	method: string,
 	path: string,
-	{ body, headers, query, skipAuth, ...init }: RequestOptions,
+	{ body, headers, query, ...init }: RequestOptions,
 ) {
-	const authorization = skipAuth ? undefined : getAuthorizationHeader();
-
 	return fetch(buildUrl(path, query), {
 		...init,
 		credentials: init.credentials ?? "include",
@@ -113,7 +96,6 @@ async function sendRequest(
 		headers: {
 			Accept: "application/json",
 			...(body !== undefined ? { "Content-Type": "application/json" } : {}),
-			...(authorization ? { Authorization: authorization } : {}),
 			...headers,
 		},
 		body: body !== undefined ? JSON.stringify(body) : undefined,
@@ -135,29 +117,32 @@ function isAuthTokenPath(path: string) {
 }
 
 async function refreshStoredAccessToken() {
-	try {
-		const response = await sendRequest("POST", "/auth/token/refresh", {
-			skipAuth: true,
-			skipAuthRefresh: true,
+	if (!refreshAccessTokenRequest) {
+		refreshAccessTokenRequest = requestAccessTokenRefresh().finally(() => {
+			refreshAccessTokenRequest = null;
 		});
+	}
+
+	return refreshAccessTokenRequest;
+}
+
+async function requestAccessTokenRefresh() {
+	try {
+		const response = await sendRequest("POST", "/auth/token/refresh", {});
 		const responseBody = await parseResponse(response);
 
 		if (!response.ok) {
-			clearAuthTokens();
 			return false;
 		}
 
-		const body = responseBody as ApiResponse<AuthTokens>;
+		const body = responseBody as ApiResponse<AuthTokenMetadata>;
 
 		if (!body.data) {
-			clearAuthTokens();
 			return false;
 		}
 
-		saveAuthTokens(body.data);
 		return true;
 	} catch {
-		clearAuthTokens();
 		return false;
 	}
 }
