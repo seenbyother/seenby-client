@@ -63,7 +63,7 @@ export function BottomNavigation({
 		}
 
 		if (tab === "feedback") {
-			navigate("/feedback/detail/4");
+			navigate("/groups");
 		}
 	};
 
