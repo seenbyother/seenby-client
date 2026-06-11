@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { Button, Header, ProgressBar } from "@/shared/components";
+import { WritingGuideModal } from "../WritingGuideModal";
 
 interface ExperienceStepProps {
 	recipientName: string;
@@ -17,6 +19,7 @@ function autoResize(el: HTMLTextAreaElement) {
 
 export function ExperienceStep({ recipientName, experiences, onChange, onAdd, onDelete, onBack, onNext }: ExperienceStepProps) {
 	const hasContent = experiences.some((e) => e.trim().length > 0);
+	const [isGuideOpen, setIsGuideOpen] = useState(false);
 
 	return (
 		<div className="min-h-screen flex flex-col bg-white text-left">
@@ -86,6 +89,7 @@ export function ExperienceStep({ recipientName, experiences, onChange, onAdd, on
 			<div className="px-5 pb-8 flex flex-col gap-2">
 				<button
 					type="button"
+					onClick={() => setIsGuideOpen(true)}
 					className="text-[14px] font-medium leading-[150%] text-[#475569] underline self-center bg-transparent border-none cursor-pointer outline-none"
 				>
 					어떻게 작성하는지 모르겠어요
@@ -94,6 +98,7 @@ export function ExperienceStep({ recipientName, experiences, onChange, onAdd, on
 					다음
 				</Button>
 			</div>
+			<WritingGuideModal isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} />
 		</div>
 	);
 }

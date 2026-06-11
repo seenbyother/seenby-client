@@ -2,11 +2,20 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import IcArrowLeft from "@/assets/ic_arrow_left.svg?react";
 import { FeedbackCard, type FeedbackItem } from "./_components/FeedbackCard";
-import type { Group } from "./_components/GroupCard";
+
+type Group = {
+	id: number;
+	name: string;
+	memberCount: number;
+	status: "진행중" | "종료";
+	startDate: string;
+	endDate?: string;
+};
 
 type FilterTab = "전체" | "회고 미완료" | "회고 완료";
 const FILTER_TABS: FilterTab[] = ["전체", "회고 미완료", "회고 완료"];
 
+// TODO: 실제 API 연동 시 MOCK_GROUPS, MOCK_FEEDBACKS 제거 및 Group 타입을 FeedbackGroup으로 교체
 const MOCK_GROUPS: Group[] = [
 	{ id: 1, name: "SeenBy 프로젝트", memberCount: 4, status: "진행중", startDate: "2026.02" },
 	{ id: 2, name: "SeenBy 프로젝트", memberCount: 4, status: "진행중", startDate: "2026.02" },
