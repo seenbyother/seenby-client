@@ -1,26 +1,20 @@
 import IcChevronRight from "@/assets/icons/ic_chevron_right.svg?react";
+import type { FeedbackGroup } from "@/features/feedback-groups/api";
+import { formatYearMonth, formatYearMonthDay } from "@/shared/utils/date";
 
-export type GroupStatus = "진행중" | "종료";
-
-export interface Group {
-	id: number;
-	name: string;
-	memberCount: number;
-	status: GroupStatus;
-	startDate: string;
-	endDate?: string;
-}
+export type { FeedbackGroup };
 
 interface GroupCardProps {
-	group: Group;
+	group: FeedbackGroup;
 	onClick?: () => void;
 }
 
 export function GroupCard({ group, onClick }: GroupCardProps) {
-	const dateLabel =
-		group.status === "진행중"
-			? `${group.startDate} ~`
-			: `${group.startDate} ~ ${group.endDate}`;
+	const isActive = group.linkActive;
+	const startDate = formatYearMonth(group.createdAt);
+	const dateLabel = isActive
+		? `${startDate} ~`
+		: `${startDate} ~ ${group.endDate ? formatYearMonthDay(group.endDate) : ""}`;
 
 	return (
 		<button
@@ -31,12 +25,12 @@ export function GroupCard({ group, onClick }: GroupCardProps) {
 			<div className="flex flex-col gap-1">
 				<div className="flex items-center gap-3">
 					<span className="text-[20px] font-bold leading-tight text-black">{group.name}</span>
-					{group.status === "진행중" && (
+					{isActive && (
 						<span className="w-2.5 h-2.5 rounded-full bg-[#0073FF] flex-shrink-0" />
 					)}
 				</div>
 				<div className="flex items-center gap-2.5">
-					<span className="text-[16px] text-black">{group.memberCount}명</span>
+					<span className="text-[16px] text-black">{group.answerCount}명</span>
 					<span className="text-[16px] text-black">{dateLabel}</span>
 				</div>
 			</div>

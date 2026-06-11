@@ -1,42 +1,31 @@
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import IcArrowLeft from "@/assets/ic_arrow_left.svg?react";
 import IcPlus from "@/assets/icons/ic_plus.svg?react";
+import { getFeedbackGroups } from "@/features/feedback-groups/api";
 import { BottomNavigation } from "@/shared/components";
-import { type Group, GroupCard } from "./_components/GroupCard";
+import { GroupCard } from "./_components/GroupCard";
 
 type FilterTab = "전체" | "진행중" | "종료";
-
-const MOCK_GROUPS: Group[] = [
-	{ id: 1, name: "SeenBy 프로젝트", memberCount: 4, status: "진행중", startDate: "2026.02" },
-	{ id: 2, name: "SeenBy 프로젝트", memberCount: 4, status: "진행중", startDate: "2026.02" },
-	{
-		id: 3,
-		name: "SeenBy 프로젝트",
-		memberCount: 2,
-		status: "종료",
-		startDate: "2025.02.01",
-		endDate: "2025.03.06",
-	},
-	{
-		id: 4,
-		name: "SeenBy 프로젝트",
-		memberCount: 2,
-		status: "종료",
-		startDate: "2025.02.01",
-		endDate: "2025.03.06",
-	},
-];
 
 const FILTER_TABS: FilterTab[] = ["전체", "진행중", "종료"];
 
 export function GroupsPage() {
 	const navigate = useNavigate();
 	const [activeTab, setActiveTab] = useState<FilterTab>("전체");
-	const [groups] = useState<Group[]>(MOCK_GROUPS);
+	const { data } = useQuery({
+		queryKey: ["feedback-groups"],
+		queryFn: getFeedbackGroups,
+	});
+	const groups = data?.groups ?? [];
 
 	const filteredGroups =
-		activeTab === "전체" ? groups : groups.filter((g) => g.status === activeTab);
+		activeTab === "전체"
+			? groups
+			: groups.filter((g) =>
+					activeTab === "진행중" ? g.linkActive : !g.linkActive,
+				);
 
 	return (
 		<div className="min-h-screen bg-[#F8F8F8] flex flex-col relative">
@@ -84,7 +73,7 @@ export function GroupsPage() {
 			</main>
 
 			{/* FAB */}
-			<div className="fixed bottom-28 right-5">
+			<div className="absolute bottom-30 right-5">
 				<button
 					type="button"
 					onClick={() => navigate("/feedback-group/create")}

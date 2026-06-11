@@ -1,53 +1,53 @@
-import { useMemo, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { useState } from "react";
 import { useNavigate } from "react-router";
 import linkCharacter from "@/assets/images/link.png";
 import kakaoIcon from "@/assets/kakao.svg";
 import LinkIcon from "@/assets/link.svg?react";
+import { createFeedbackGroup } from "@/features/feedback-groups/api";
 import { GroupCreateHeader } from "@/pages/feedback-group/_components/GroupCreateHeader";
 import { ShareButton } from "@/pages/feedback-group/_components/ShareButton";
 import { StepTitle } from "@/pages/feedback-group/_components/StepTitle";
+import { CONTEXT_OPTIONS, RELATION_OPTIONS } from "@/pages/feedback-group/constants";
 import { Button, Input, KeywordChip } from "@/shared/components";
 
-type CreateStep = "name" | "relation" | "complete";
-
-const RELATION_OPTIONS = ["동료", "상사", "후배", "친구", "가족"];
+type CreateStep = "name" | "relation" | "context" | "complete";
 
 export function FeedbackGroupCreatePage() {
 	const navigate = useNavigate();
 	const [step, setStep] = useState<CreateStep>("name");
 	const [groupName, setGroupName] = useState("");
 	const [relation, setRelation] = useState("");
+	const [contextType, setContextType] = useState("");
+	const [linkToken, setLinkToken] = useState("");
 
 	const trimmedGroupName = groupName.trim();
-	const shareUrl = useMemo(() => {
-		const slug = encodeURIComponent(trimmedGroupName || "SeenBy");
-		return `${window.location.origin}/feedback?group=${slug}`;
-	}, [trimmedGroupName]);
+	const shareUrl = linkToken
+		? `${window.location.origin}/feedback?token=${linkToken}`
+		: "";
+
+	const createMutation = useMutation({
+		mutationFn: createFeedbackGroup,
+		onSuccess: (group) => {
+			setLinkToken(group.linkToken);
+			setStep("complete");
+		},
+	});
 
 	const goBack = () => {
-		if (step === "relation") {
-			setStep("name");
-			return;
-		}
-
-		if (step === "complete") {
-			setStep("relation");
-			return;
-		}
+		if (step === "relation") { setStep("name"); return; }
+		if (step === "context") { setStep("relation"); return; }
+		if (step === "complete") { setStep("context"); return; }
 
 		if (window.history.length > 1) {
 			navigate(-1);
 			return;
 		}
-
 		navigate("/login");
 	};
 
 	const copyShareLink = async () => {
-		if (!navigator.clipboard) {
-			return;
-		}
-
+		if (!navigator.clipboard || !shareUrl) return;
 		await navigator.clipboard.writeText(shareUrl);
 	};
 
@@ -55,14 +55,19 @@ export function FeedbackGroupCreatePage() {
 		await copyShareLink();
 	};
 
-	const submitGroupName = (event: React.FormEvent<HTMLFormElement>) => {
+	const submitGroupName = (event: { preventDefault(): void }) => {
 		event.preventDefault();
-
-		if (!trimmedGroupName) {
-			return;
-		}
-
+		if (!trimmedGroupName) return;
 		setStep("relation");
+	};
+
+	const submitContext = () => {
+		if (!contextType.trim()) return;
+		createMutation.mutate({
+			name: trimmedGroupName,
+			relationshipType: relation,
+			contextType: contextType.trim(),
+		});
 	};
 
 	return (
@@ -110,26 +115,75 @@ export function FeedbackGroupCreatePage() {
 							<p className="mb-2 mt-0 block text-[14px] font-medium leading-[150%] text-black">
 								그룹 관계
 							</p>
-							<div className="w-full h-[52px] rounded-xl bg-[#F3F4F6] px-4 py-2 flex items-center text-[20px] font-medium leading-[150%] text-black">
-								{relation}
+							<div className="mt-5 flex flex-wrap gap-x-4 gap-y-2">
+								{RELATION_OPTIONS.map((option) => (
+									<KeywordChip
+										key={option}
+										label={option}
+										selected={relation === option}
+										onClick={() => setRelation(option)}
+									/>
+								))}
 							</div>
 						</div>
 
-						<div className="mt-5 flex flex-wrap gap-x-4 gap-y-2">
-							{RELATION_OPTIONS.map((option) => (
-								<KeywordChip
-									key={option}
-									label={option}
-									selected={relation === option}
-									onClick={() => setRelation(option)}
-								/>
-							))}
+						<div className="mt-5">
+							<p className="mb-2 mt-0 block text-[14px] font-medium leading-[150%] text-black">
+								직접 입력
+							</p>
+							<Input value={relation} onChange={(val) => setRelation(val)} />
 						</div>
 					</div>
 
 					<div className="px-5 pb-8">
-						<Button onClick={() => setStep("complete")} disabled={!relation}>
-							완료
+						<Button onClick={() => setStep("context")} disabled={!relation}>
+							다음
+						</Button>
+					</div>
+				</>
+			)}
+
+			{step === "context" && (
+				<>
+					<div className="px-5 pt-[30px] flex-1">
+						<StepTitle
+							title="이 그룹의 상황을 선택해주세요"
+							description="상황에 따라 분석 내용이 달라져요"
+						/>
+
+						<div className="mt-[30px]">
+							<p className="mb-2 mt-0 block text-[14px] font-medium leading-[150%] text-black">
+								그룹 상황
+							</p>
+							<div className="mt-5 flex flex-wrap gap-x-4 gap-y-2">
+								{CONTEXT_OPTIONS.map((option) => (
+									<KeywordChip
+										key={option}
+										label={option}
+										selected={contextType === option}
+										onClick={() => setContextType(option)}
+									/>
+								))}
+							</div>
+						</div>
+
+						<div className="mt-5">
+							<p className="mb-2 mt-0 block text-[14px] font-medium leading-[150%] text-black">
+								직접 입력
+							</p>
+							<Input
+								value={contextType}
+								onChange={(val) => setContextType(val)}
+							/>
+						</div>
+					</div>
+
+					<div className="px-5 pb-8">
+						<Button
+							onClick={submitContext}
+							disabled={!contextType.trim() || createMutation.isPending}
+						>
+							{createMutation.isPending ? "생성 중..." : "완료"}
 						</Button>
 					</div>
 				</>
@@ -140,7 +194,7 @@ export function FeedbackGroupCreatePage() {
 					<div className="flex-1 flex flex-col items-center px-5 pt-[139px]">
 						<div className="text-center">
 							<h1 className="m-0 text-[32px] font-semibold leading-[160%] tracking-[-0.02em] text-black">
-								“{trimmedGroupName || "SeenBy"}” 그룹 생성 완료
+								"{trimmedGroupName || "SeenBy"}" 그룹 생성 완료
 							</h1>
 							<p className="mt-1 mb-0 text-[16px] font-medium leading-[150%] text-black">
 								링크를 공유해서 피드백을 수집해보세요.
@@ -170,7 +224,7 @@ export function FeedbackGroupCreatePage() {
 					</div>
 
 					<div className="px-5 pb-8">
-						<Button onClick={() => navigate("/feedback")}>확인</Button>
+						<Button onClick={() => navigate("/groups")}>확인</Button>
 					</div>
 				</>
 			)}
