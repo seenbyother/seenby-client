@@ -12,6 +12,8 @@ interface RetrospectiveSheetProps {
 	onChange: (value: string) => void;
 	onClose: () => void;
 	onSave: () => void;
+	isSaving?: boolean;
+	errorMessage?: string | null;
 }
 
 export function RetrospectiveSheet({
@@ -21,6 +23,8 @@ export function RetrospectiveSheet({
 	onChange,
 	onClose,
 	onSave,
+	isSaving = false,
+	errorMessage,
 }: RetrospectiveSheetProps) {
 	const [dragOffset, setDragOffset] = useState(0);
 	const [isDragging, setIsDragging] = useState(false);
@@ -33,17 +37,21 @@ export function RetrospectiveSheet({
 	};
 
 	const closeSheet = () => {
+		if (isSaving) return;
+
 		closeGuide();
 		onClose();
 	};
 
 	const saveSheet = () => {
+		if (isSaving) return;
+
 		closeGuide();
 		onSave();
 	};
 
 	const beginDrag = (event: PointerEvent<HTMLDivElement>) => {
-		if (!isOpen) return;
+		if (!isOpen || isSaving) return;
 
 		dragStartYRef.current = event.clientY;
 		dragOffsetRef.current = dragOffset;
@@ -83,6 +91,7 @@ export function RetrospectiveSheet({
 					? "transition-none"
 					: "transition-transform duration-300 ease-out",
 				isOpen ? "" : "pointer-events-none",
+				isSaving ? "cursor-wait" : "",
 			].join(" ")}
 			style={{
 				transform: isOpen ? `translateY(${dragOffset}px)` : "translateY(100%)",
@@ -101,8 +110,9 @@ export function RetrospectiveSheet({
 				<button
 					type="button"
 					onClick={closeSheet}
+					disabled={isSaving}
 					aria-label="회고 작성 닫기"
-					className="flex h-6 w-6 items-center justify-center border-0 bg-transparent p-0"
+					className="flex h-6 w-6 items-center justify-center border-0 bg-transparent p-0 disabled:opacity-40"
 				>
 					<CloseIcon aria-hidden="true" />
 				</button>
@@ -130,13 +140,19 @@ export function RetrospectiveSheet({
 					<button
 						type="button"
 						onClick={saveSheet}
+						disabled={isSaving}
 						aria-label="회고 저장하기"
-						className="flex h-6 w-6 items-center justify-center border-0 bg-transparent p-0"
+						className="flex h-6 w-6 items-center justify-center border-0 bg-transparent p-0 disabled:opacity-40"
 					>
 						<CheckIcon aria-hidden="true" />
 					</button>
 				</div>
 			</div>
+			{errorMessage ? (
+				<p className="mx-[39px] mt-4 mb-0 text-[13px] font-medium text-red-500">
+					{errorMessage}
+				</p>
+			) : null}
 			{isGuideOpen ? (
 				<div
 					id="retrospective-guide"

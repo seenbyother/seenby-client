@@ -1,92 +1,115 @@
-import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import BackIcon from "@/assets/feedback/before.svg?react";
+import {
+	getFeedbackAnswerDetail,
+	saveFeedbackRetrospect,
+} from "@/features/feedback-answers/api";
 import { ExperienceCard } from "@/pages/feedback-detail/_components/ExperienceCard";
 import { RetrospectiveCard } from "@/pages/feedback-detail/_components/RetrospectiveCard";
 import { RetrospectiveSheet } from "@/pages/feedback-detail/_components/RetrospectiveSheet";
-import type { FeedbackAnswerDetail } from "@/pages/feedback-detail/types";
-
-const feedbackAnswerDetail: FeedbackAnswerDetail = {
-	id: 4,
-	feedbackGroupId: 4,
-	reviewerName: "김연우",
-	experienceCount: 5,
-	experienceFeedbacks: [
-		{
-			id: 1,
-			experience:
-				"팀 프로젝트 회의 때 매번 회의록을 정리해서 팀원들에게 공유했어요.",
-			feedback: "책임감이 강하고 팀을 안정적으로 이끄는 사람이라고 느꼈어요.",
-			displayOrder: 0,
-		},
-		{
-			id: 2,
-			experience:
-				"행사 뒤풀이 자리에서 처음 보는 사람들과 먼저 대화를 시작했어요.",
-			feedback: "사람들을 편하게 만들어주는 밝은 에너지가 있는 사람 같았어요.",
-			displayOrder: 1,
-		},
-		{
-			id: 3,
-			experience:
-				"일정이 촉박할 때도 역할을 나누고 마감 시간을 먼저 확인했어요.",
-			feedback:
-				"상황을 빠르게 정리하고 팀이 움직일 수 있게 도와주는 사람이었어요.",
-			displayOrder: 2,
-		},
-		{
-			id: 4,
-			experience:
-				"발표 자료를 만들 때 사소한 오탈자와 흐름까지 꼼꼼하게 봐줬어요.",
-			feedback: "완성도를 높이기 위해 끝까지 책임지는 모습이 인상적이었어요.",
-			displayOrder: 3,
-		},
-		{
-			id: 5,
-			experience:
-				"의견이 엇갈릴 때 상대 이야기를 끝까지 듣고 중간에서 정리해줬어요.",
-			feedback:
-				"갈등을 부드럽게 풀어내고 모두가 납득할 수 있게 만드는 사람이었어요.",
-			displayOrder: 4,
-		},
-	],
-	keywords: ["친절함", "긍정적", "솔직한", "박식한"],
-	submittedAt: "2026-04-27T00:00:00",
-	createdAt: "2026-04-27T00:00:00",
-};
-
-const feedbackAnswerDetailsByAnswerId: Record<number, FeedbackAnswerDetail> = {
-	[feedbackAnswerDetail.id]: feedbackAnswerDetail,
-};
+import { ApiError } from "@/shared/api";
 
 const RECIPIENT_NAME = "김민경";
 
-const initialRetrospectivesByExperienceFeedbackId: Record<number, string> = {
-	1: "",
-	2: "감사합니다. 나의 회고를 길게 작성하는 더미 텍스트입니다. 감사합니다. 나의 회고를 길게 작성하는 더미 텍스트입니다.",
-	3: "",
-	4: "",
-	5: "",
-};
+function getErrorMessage(error: unknown) {
+	if (error instanceof ApiError) {
+		const body = error.body as { error?: unknown; message?: unknown };
+
+		if (typeof body?.message === "string") {
+			return body.message;
+		}
+
+		if (typeof body?.error === "string") {
+			return body.error;
+		}
+	}
+
+	if (error instanceof Error) {
+		return error.message;
+	}
+
+	return "피드백 답변을 불러오지 못했어요.";
+}
 
 export function FeedbackDetailPage() {
 	const navigate = useNavigate();
+	const queryClient = useQueryClient();
 	const { answerId } = useParams<{ answerId: string }>();
-	const currentAnswerId = Number(answerId ?? String(feedbackAnswerDetail.id));
-	const currentFeedbackAnswerDetail =
-		feedbackAnswerDetailsByAnswerId[currentAnswerId] ?? feedbackAnswerDetail;
+	const currentAnswerId = Number(answerId);
+	const isValidAnswerId =
+		Number.isInteger(currentAnswerId) && currentAnswerId > 0;
+	const { data, error, isError, isLoading, refetch } = useQuery({
+		queryKey: ["feedback-answer", currentAnswerId],
+		queryFn: () => getFeedbackAnswerDetail(currentAnswerId),
+		enabled: isValidAnswerId,
+	});
 	const [
 		retrospectivesByExperienceFeedbackId,
 		setRetrospectivesByExperienceFeedbackId,
-	] = useState(initialRetrospectivesByExperienceFeedbackId);
+	] = useState<Record<number, string>>({});
 	const [editingExperienceFeedbackId, setEditingExperienceFeedbackId] =
 		useState<number | null>(null);
 	const [isSheetOpen, setIsSheetOpen] = useState(false);
+	const [retrospectiveSaveError, setRetrospectiveSaveError] = useState<
+		string | null
+	>(null);
+	const saveRetrospectMutation = useMutation({
+		mutationFn: ({
+			experienceFeedbackId,
+			retrospect,
+		}: {
+			experienceFeedbackId: number;
+			retrospect: string | null;
+		}) => saveFeedbackRetrospect(experienceFeedbackId, retrospect),
+		onSuccess: async () => {
+			setRetrospectiveSaveError(null);
+			setIsSheetOpen(false);
+			setEditingExperienceFeedbackId(null);
+
+			await Promise.all([
+				queryClient.invalidateQueries({
+					queryKey: ["feedback-answer", currentAnswerId],
+				}),
+				data
+					? queryClient.invalidateQueries({
+							queryKey: ["feedback-group", data.feedbackGroupId],
+						})
+					: Promise.resolve(),
+			]);
+		},
+		onError: (mutationError) => {
+			setRetrospectiveSaveError(getErrorMessage(mutationError));
+		},
+	});
+
+	useEffect(() => {
+		if (!data) {
+			return;
+		}
+
+		setRetrospectivesByExperienceFeedbackId((current) => {
+			const next = { ...current };
+
+			for (const experienceFeedback of data.experienceFeedbacks) {
+				if (
+					next[experienceFeedback.id] === undefined &&
+					experienceFeedback.retrospect !== undefined
+				) {
+					next[experienceFeedback.id] = experienceFeedback.retrospect ?? "";
+				}
+			}
+
+			return next;
+		});
+	}, [data]);
 
 	const activeExperienceFeedback =
 		editingExperienceFeedbackId === null
 			? null
-			: (currentFeedbackAnswerDetail.experienceFeedbacks.find(
+			: (data?.experienceFeedbacks.find(
 					(item) => item.id === editingExperienceFeedbackId,
 				) ?? null);
 	const activeRetrospective = activeExperienceFeedback
@@ -94,6 +117,7 @@ export function FeedbackDetailPage() {
 		: "";
 
 	const openRetrospectiveEditor = (experienceFeedbackId: number) => {
+		setRetrospectiveSaveError(null);
 		setEditingExperienceFeedbackId(experienceFeedbackId);
 		setIsSheetOpen(true);
 	};
@@ -108,102 +132,82 @@ export function FeedbackDetailPage() {
 	};
 
 	const saveRetrospective = () => {
-		setIsSheetOpen(false);
-		setEditingExperienceFeedbackId(null);
+		if (saveRetrospectMutation.isPending) {
+			return;
+		}
+
+		if (editingExperienceFeedbackId === null) {
+			setIsSheetOpen(false);
+			return;
+		}
+
+		const retrospect =
+			retrospectivesByExperienceFeedbackId[editingExperienceFeedbackId] ?? "";
+
+		saveRetrospectMutation.mutate({
+			experienceFeedbackId: editingExperienceFeedbackId,
+			retrospect,
+		});
 	};
 
 	const closeSheet = () => {
+		setRetrospectiveSaveError(null);
 		setIsSheetOpen(false);
 	};
 
-	const submittedDate = new Intl.DateTimeFormat("ko-KR", {
-		year: "numeric",
-		month: "2-digit",
-		day: "2-digit",
-	}).format(new Date(currentFeedbackAnswerDetail.submittedAt));
+	const submittedDate = data
+		? new Intl.DateTimeFormat("ko-KR", {
+				year: "numeric",
+				month: "2-digit",
+				day: "2-digit",
+			}).format(new Date(data.submittedAt))
+		: "";
+
+	if (!isValidAnswerId) {
+		return (
+			<FeedbackDetailLayout onBack={() => navigate(-1)}>
+				<div className="flex h-[60vh] items-center justify-center">
+					<span className="text-[18px] text-black/50">
+						피드백 답변을 찾을 수 없어요
+					</span>
+				</div>
+			</FeedbackDetailLayout>
+		);
+	}
+
+	if (isLoading) {
+		return (
+			<FeedbackDetailLayout onBack={() => navigate(-1)}>
+				<div className="flex h-[60vh] items-center justify-center">
+					<span className="text-[18px] text-black/50">불러오는 중...</span>
+				</div>
+			</FeedbackDetailLayout>
+		);
+	}
+
+	if (isError || !data) {
+		return (
+			<FeedbackDetailLayout onBack={() => navigate(-1)}>
+				<div className="flex h-[60vh] flex-col items-center justify-center gap-3 px-5 text-center">
+					<span className="text-[16px] font-medium text-red-500">
+						{getErrorMessage(error)}
+					</span>
+					<button
+						type="button"
+						onClick={() => refetch()}
+						className="rounded-full border-none bg-[#0073FF] px-4 py-2 text-[14px] font-bold text-white"
+					>
+						다시 불러오기
+					</button>
+				</div>
+			</FeedbackDetailLayout>
+		);
+	}
 
 	return (
-		<main className="min-h-screen bg-[#F8F8F8] text-left text-black">
-			<div className="relative mx-auto h-[100svh] w-full max-w-[402px] overflow-hidden bg-[#F8F8F8]">
-				<div className="h-full overflow-y-auto px-[19px] pb-[124px] pt-8">
-					<header className="mb-6 flex h-8 items-center">
-						<button
-							type="button"
-							onClick={() => navigate(-1)}
-							aria-label="뒤로 가기"
-							className="flex h-8 w-8 items-center justify-center border-0 bg-transparent p-0"
-						>
-							<BackIcon aria-hidden="true" />
-						</button>
-					</header>
-
-					<section className="mb-6 flex items-end justify-between">
-						<h1 className="m-0 text-[24px] font-bold leading-none">
-							{currentFeedbackAnswerDetail.reviewerName} 님의 피드백
-						</h1>
-						<p className="m-0 text-center text-[12px] leading-none text-[#696969]">
-							{submittedDate}
-						</p>
-					</section>
-
-					<section className="rounded-[20px] bg-white p-4">
-						<h2 className="m-0 text-[16px] font-bold leading-normal">
-							{RECIPIENT_NAME} 님에게 어울리는 단어
-						</h2>
-						<div className="mt-3 grid grid-cols-4 gap-3">
-							{currentFeedbackAnswerDetail.keywords.map((keyword) => (
-								<span
-									key={keyword}
-									className="flex h-8 items-center justify-center whitespace-nowrap rounded-[20px] border border-[rgba(0,115,255,0.1)] bg-[rgba(0,115,255,0.05)] px-[10px] text-[13px] font-semibold leading-none text-[#0073FF]"
-								>
-									#{keyword}
-								</span>
-							))}
-						</div>
-					</section>
-
-					<p className="my-6 text-right text-[12px] leading-none text-[#696969]">
-						총 {currentFeedbackAnswerDetail.experienceCount}개
-					</p>
-
-					<div className="flex flex-col gap-6">
-						{currentFeedbackAnswerDetail.experienceFeedbacks.map(
-							(experienceFeedback) => (
-								<section
-									key={experienceFeedback.id}
-									className="flex flex-col gap-5"
-								>
-									<ExperienceCard
-										experienceFeedback={experienceFeedback}
-										recipientName={RECIPIENT_NAME}
-									/>
-									<RetrospectiveCard
-										experienceFeedback={experienceFeedback}
-										retrospective={
-											retrospectivesByExperienceFeedbackId[
-												experienceFeedback.id
-											] ?? ""
-										}
-										isEditing={
-											editingExperienceFeedbackId === experienceFeedback.id &&
-											isSheetOpen
-										}
-										onToggleEdit={() =>
-											editingExperienceFeedbackId === experienceFeedback.id &&
-											isSheetOpen
-												? saveRetrospective()
-												: openRetrospectiveEditor(experienceFeedback.id)
-										}
-										onOpen={() =>
-											openRetrospectiveEditor(experienceFeedback.id)
-										}
-									/>
-								</section>
-							),
-						)}
-					</div>
-				</div>
-
+		<FeedbackDetailLayout
+			onBack={() => navigate(-1)}
+			sheet={
 				<RetrospectiveSheet
 					isOpen={isSheetOpen}
 					experienceFeedback={activeExperienceFeedback}
@@ -211,7 +215,106 @@ export function FeedbackDetailPage() {
 					onChange={updateRetrospective}
 					onClose={closeSheet}
 					onSave={saveRetrospective}
+					isSaving={saveRetrospectMutation.isPending}
+					errorMessage={retrospectiveSaveError}
 				/>
+			}
+		>
+			<section className="mb-6 flex items-end justify-between">
+				<h1 className="m-0 text-[24px] font-bold leading-none">
+					{data.reviewerName} 님의 피드백
+				</h1>
+				<p className="m-0 text-center text-[12px] leading-none text-[#696969]">
+					{submittedDate}
+				</p>
+			</section>
+
+			<section className="rounded-[20px] bg-white p-4">
+				<h2 className="m-0 text-[16px] font-bold leading-normal">
+					{RECIPIENT_NAME} 님에게 어울리는 단어
+				</h2>
+				{data.keywords.length === 0 ? (
+					<p className="mt-3 mb-0 text-[14px] text-[#696969]">
+						선택된 단어가 없어요
+					</p>
+				) : (
+					<div className="mt-3 grid grid-cols-4 gap-3">
+						{data.keywords.map((keyword) => (
+							<span
+								key={keyword}
+								className="flex h-8 items-center justify-center whitespace-nowrap rounded-[20px] border border-[rgba(0,115,255,0.1)] bg-[rgba(0,115,255,0.05)] px-[10px] text-[13px] font-semibold leading-none text-[#0073FF]"
+							>
+								#{keyword}
+							</span>
+						))}
+					</div>
+				)}
+			</section>
+
+			<p className="my-6 text-right text-[12px] leading-none text-[#696969]">
+				총 {data.experienceCount}개
+			</p>
+
+			<div className="flex flex-col gap-6">
+				{data.experienceFeedbacks.map((experienceFeedback) => (
+					<section key={experienceFeedback.id} className="flex flex-col gap-5">
+						<ExperienceCard
+							experienceFeedback={experienceFeedback}
+							recipientName={RECIPIENT_NAME}
+						/>
+						<RetrospectiveCard
+							experienceFeedback={experienceFeedback}
+							retrospective={
+								retrospectivesByExperienceFeedbackId[experienceFeedback.id] ??
+								""
+							}
+							isEditing={
+								editingExperienceFeedbackId === experienceFeedback.id &&
+								isSheetOpen
+							}
+							onToggleEdit={() =>
+								editingExperienceFeedbackId === experienceFeedback.id &&
+								isSheetOpen
+									? saveRetrospective()
+									: openRetrospectiveEditor(experienceFeedback.id)
+							}
+							onOpen={() => openRetrospectiveEditor(experienceFeedback.id)}
+						/>
+					</section>
+				))}
+			</div>
+		</FeedbackDetailLayout>
+	);
+}
+
+type FeedbackDetailLayoutProps = {
+	children: ReactNode;
+	onBack: () => void;
+	sheet?: ReactNode;
+};
+
+function FeedbackDetailLayout({
+	children,
+	onBack,
+	sheet,
+}: FeedbackDetailLayoutProps) {
+	return (
+		<main className="min-h-screen bg-[#F8F8F8] text-left text-black">
+			<div className="relative mx-auto h-[100svh] w-full max-w-[402px] overflow-hidden bg-[#F8F8F8]">
+				<div className="h-full overflow-y-auto px-[19px] pb-[124px] pt-8">
+					<header className="mb-6 flex h-8 items-center">
+						<button
+							type="button"
+							onClick={onBack}
+							aria-label="뒤로 가기"
+							className="flex h-8 w-8 items-center justify-center border-0 bg-transparent p-0"
+						>
+							<BackIcon aria-hidden="true" />
+						</button>
+					</header>
+					{children}
+				</div>
+				{sheet}
 			</div>
 		</main>
 	);
