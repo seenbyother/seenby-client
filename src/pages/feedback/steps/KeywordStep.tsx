@@ -16,6 +16,13 @@ export function KeywordStep({ recipientName, selectedKeywords, onToggle, onBack,
 
 	const currentRoundSelected = round.keywords.filter((k) => selectedKeywords.includes(k));
 	const hasSelection = currentRoundSelected.length >= 1;
+	const isRoundAtMax = currentRoundSelected.length >= 5;
+
+	const handleToggle = (keyword: string) => {
+		const isSelected = selectedKeywords.includes(keyword);
+		if (!isSelected && isRoundAtMax) return;
+		onToggle(keyword);
+	};
 
 	const handleNext = () => {
 		if (roundIndex < KEYWORD_ROUNDS.length - 1) {
@@ -45,7 +52,7 @@ export function KeywordStep({ recipientName, selectedKeywords, onToggle, onBack,
 					<p className="text-[28px] font-semibold leading-[160%] tracking-[-0.02em] text-black m-0 whitespace-pre-line">
 						{round.title(recipientName)}
 					</p>
-					<p className="text-[16px] font-medium leading-[150%] text-[#71717A] m-0">{round.subtitle}</p>
+					<p className="text-[16px] font-medium leading-[150%] text-[#71717A] m-0 whitespace-pre-line">{round.subtitle}</p>
 				</div>
 
 				<div className="mt-6 flex flex-wrap gap-x-4 gap-y-2 pb-4">
@@ -54,7 +61,7 @@ export function KeywordStep({ recipientName, selectedKeywords, onToggle, onBack,
 							key={keyword}
 							label={keyword}
 							selected={selectedKeywords.includes(keyword)}
-							onClick={() => onToggle(keyword)}
+							onClick={() => handleToggle(keyword)}
 						/>
 					))}
 				</div>
