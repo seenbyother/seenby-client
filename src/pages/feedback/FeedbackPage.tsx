@@ -1,4 +1,7 @@
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { useSearchParams } from "react-router";
+import { getPublicFeedbackGroup, submitPublicFeedbackAnswer } from "@/features/feedback-groups/api";
 import { CompletionStep } from "./steps/CompletionStep";
 import { ExperienceStep } from "./steps/ExperienceStep";
 import { KeywordStep } from "./steps/KeywordStep";
@@ -8,15 +11,37 @@ import { ThoughtsStep } from "./steps/ThoughtsStep";
 
 type Step = "landing" | "nickname" | "keywords" | "experience" | "thoughts" | "completion";
 
-const RECIPIENT_NAME = "김민경";
-const GROUP_NAME = "2026 캡스톤 디자인";
-
 export function FeedbackPage() {
+	const [searchParams] = useSearchParams();
+	const linkToken = searchParams.get("token") ?? "";
+
+	const { data: groupInfo, isLoading, isError } = useQuery({
+		queryKey: ["public-feedback-group", linkToken],
+		queryFn: () => getPublicFeedbackGroup(linkToken),
+		enabled: !!linkToken,
+		retry: false,
+	});
+
 	const [step, setStep] = useState<Step>("landing");
 	const [nickname, setNickname] = useState("");
 	const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
 	const [experiences, setExperiences] = useState<string[]>(["", ""]);
 	const [thoughts, setThoughts] = useState<string[]>([]);
+
+	const submitMutation = useMutation({
+		mutationFn: () => {
+			const filledExperiences = experiences.filter((e) => e.trim());
+			return submitPublicFeedbackAnswer(linkToken, {
+				reviewerName: nickname,
+				experienceFeedbacks: filledExperiences.map((exp, i) => ({
+					experience: exp,
+					feedback: thoughts[i] ?? "",
+				})),
+				keywords: selectedKeywords,
+			});
+		},
+		onSuccess: () => setStep("completion"),
+	});
 
 	const toggleKeyword = (keyword: string) => {
 		setSelectedKeywords((prev) =>
@@ -47,11 +72,35 @@ export function FeedbackPage() {
 		});
 	};
 
+	if (!linkToken || isError) {
+		return (
+			<div className="min-h-screen flex flex-col items-center justify-center bg-white px-5">
+				<p className="text-[20px] font-semibold text-[#374151] text-center">
+					유효하지 않은 링크입니다.
+				</p>
+				<p className="text-[16px] text-[#71717A] text-center mt-2">
+					링크를 다시 확인해주세요.
+				</p>
+			</div>
+		);
+	}
+
+	if (isLoading) {
+		return (
+			<div className="min-h-screen flex items-center justify-center bg-white">
+				<p className="text-[16px] text-[#71717A]">로딩 중...</p>
+			</div>
+		);
+	}
+
+	const recipientName = groupInfo?.ownerName ?? "";
+	const groupName = groupInfo?.name ?? "";
+
 	if (step === "landing") {
 		return (
 			<LandingStep
-				recipientName={RECIPIENT_NAME}
-				groupName={GROUP_NAME}
+				recipientName={recipientName}
+				groupName={groupName}
 				onAnonymous={() => setStep("nickname")}
 				onLogin={() => setStep("nickname")}
 			/>
@@ -72,7 +121,7 @@ export function FeedbackPage() {
 	if (step === "keywords") {
 		return (
 			<KeywordStep
-				recipientName={RECIPIENT_NAME}
+				recipientName={recipientName}
 				selectedKeywords={selectedKeywords}
 				onToggle={toggleKeyword}
 				onBack={() => setStep("nickname")}
@@ -84,7 +133,7 @@ export function FeedbackPage() {
 	if (step === "experience") {
 		return (
 			<ExperienceStep
-				recipientName={RECIPIENT_NAME}
+				recipientName={recipientName}
 				experiences={experiences}
 				onChange={updateExperience}
 				onAdd={addExperience}
@@ -98,20 +147,21 @@ export function FeedbackPage() {
 	if (step === "thoughts") {
 		return (
 			<ThoughtsStep
-				recipientName={RECIPIENT_NAME}
+				recipientName={recipientName}
 				experiences={experiences}
 				thoughts={thoughts}
 				onChange={updateThought}
 				onBack={() => setStep("experience")}
-				onSubmit={() => setStep("completion")}
+				onSubmit={() => submitMutation.mutate()}
+				isSubmitting={submitMutation.isPending}
 			/>
 		);
 	}
 
 	return (
 		<CompletionStep
-			recipientName={RECIPIENT_NAME}
-			groupName={GROUP_NAME}
+			recipientName={recipientName}
+			groupName={groupName}
 			onDone={() => setStep("landing")}
 		/>
 	);
