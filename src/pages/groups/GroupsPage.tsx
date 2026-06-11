@@ -44,6 +44,7 @@ export function GroupsPage() {
 			<header className="flex items-center justify-center relative px-5 py-[10px]">
 				<button
 					type="button"
+					onClick={() => navigate(-1)}
 					className="absolute left-5 bg-transparent border-none cursor-pointer outline-none p-[6px] -ml-[6px]"
 					aria-label="뒤로 가기"
 				>
@@ -86,6 +87,7 @@ export function GroupsPage() {
 			<div className="fixed bottom-28 right-5">
 				<button
 					type="button"
+					onClick={() => navigate("/feedback-group/create")}
 					className="flex items-center gap-2.5 px-5 py-4 rounded-[60px] bg-[#0073FF] border-none cursor-pointer"
 					style={{ boxShadow: "0px 0px 3.1px 1px rgba(0,0,0,0.25)" }}
 				>
@@ -94,7 +96,7 @@ export function GroupsPage() {
 				</button>
 			</div>
 
-			<BottomNavigation />
+			<BottomNavigation activeTab="feedback" />
 		</div>
 	);
 }

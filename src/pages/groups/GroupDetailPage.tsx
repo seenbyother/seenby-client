@@ -164,7 +164,11 @@ export function GroupDetailPage() {
 				) : (
 					<div className="flex flex-col gap-3">
 						{filteredFeedbacks.map((feedback) => (
-							<FeedbackCard key={feedback.id} feedback={feedback} />
+							<FeedbackCard
+								key={feedback.id}
+								feedback={feedback}
+								onClick={() => navigate(`/feedback/detail/${feedback.id}`)}
+							/>
 						))}
 					</div>
 				)}
