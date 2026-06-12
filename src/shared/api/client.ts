@@ -73,10 +73,14 @@ async function request<TResponse>(
 		});
 		const retryResponseBody = await parseResponse(retryResponse);
 
-		return handleParsedResponse<TResponse>(retryResponse, retryResponseBody);
+		return handleParsedResponse<TResponse>(
+			retryResponse,
+			retryResponseBody,
+			path,
+		);
 	}
 
-	return handleParsedResponse<TResponse>(response, responseBody);
+	return handleParsedResponse<TResponse>(response, responseBody, path);
 }
 
 async function sendRequest(
@@ -100,8 +104,10 @@ async function sendRequest(
 function handleParsedResponse<TResponse>(
 	response: Response,
 	responseBody: unknown,
+	path: string,
 ) {
 	if (!response.ok) {
+		redirectByAuthStatus(response.status, path);
 		throw new ApiError(
 			response.status,
 			responseBody,
@@ -142,6 +148,27 @@ function getApiErrorMessage(responseBody: unknown) {
 	}
 
 	return undefined;
+}
+
+function redirectByAuthStatus(status: number, path: string) {
+	if (typeof window === "undefined") {
+		return;
+	}
+
+	const currentPath = window.location.pathname;
+	const isCurrentUserPath = path === "/me";
+
+	if (
+		(status === 401 || (status === 403 && isCurrentUserPath)) &&
+		currentPath !== "/login"
+	) {
+		window.location.replace("/login");
+		return;
+	}
+
+	if (status === 403 && !isCurrentUserPath && currentPath !== "/forbidden") {
+		window.location.replace("/forbidden");
+	}
 }
 
 function isAuthTokenPath(path: string) {

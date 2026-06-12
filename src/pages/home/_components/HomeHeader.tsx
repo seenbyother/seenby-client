@@ -3,21 +3,27 @@ import AlarmIcon from "@/assets/home/alarm.svg?react";
 import MyPageIcon from "@/assets/home/mypage.svg?react";
 
 interface HomeHeaderProps {
-	onMyPageClick: () => void;
+	onMyPageClick?: () => void;
+	showActions?: boolean;
 }
 
-export function HomeHeader({ onMyPageClick }: HomeHeaderProps) {
+export function HomeHeader({
+	onMyPageClick,
+	showActions = false,
+}: HomeHeaderProps) {
 	return (
 		<header className="flex items-center justify-between">
 			<h1 className="m-0 text-[24px] font-bold leading-none">SeenBy</h1>
-			<div className="flex items-center gap-2">
-				<IconButton ariaLabel="알림">
-					<AlarmIcon aria-hidden="true" />
-				</IconButton>
-				<IconButton ariaLabel="마이페이지" onClick={onMyPageClick}>
-					<MyPageIcon aria-hidden="true" />
-				</IconButton>
-			</div>
+			{showActions && (
+				<div className="flex items-center gap-2">
+					<IconButton ariaLabel="알림">
+						<AlarmIcon aria-hidden="true" />
+					</IconButton>
+					<IconButton ariaLabel="마이페이지" onClick={onMyPageClick}>
+						<MyPageIcon aria-hidden="true" />
+					</IconButton>
+				</div>
+			)}
 		</header>
 	);
 }
