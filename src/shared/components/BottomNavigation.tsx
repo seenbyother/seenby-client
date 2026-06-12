@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import FeedbackIcon from "@/assets/bottombar/feedback.svg?react";
 import HomeIcon from "@/assets/bottombar/home.svg?react";
@@ -34,6 +34,7 @@ const navigationItems: {
 ];
 
 const DEFAULT_INDICATOR_STEP = 103.5;
+const ROUTE_CHANGE_DELAY_MS = 180;
 
 export function BottomNavigation({
 	activeTab = "home",
@@ -41,6 +42,7 @@ export function BottomNavigation({
 }: BottomNavigationProps) {
 	const navigate = useNavigate();
 	const [selectedTab, setSelectedTab] = useState(activeTab);
+	const routeChangeTimerRef = useRef<number | null>(null);
 	const selectedIndex = navigationItems.findIndex(
 		(item) => item.tab === selectedTab,
 	);
@@ -50,7 +52,30 @@ export function BottomNavigation({
 		setSelectedTab(activeTab);
 	}, [activeTab]);
 
+	useEffect(() => {
+		return () => {
+			if (routeChangeTimerRef.current !== null) {
+				window.clearTimeout(routeChangeTimerRef.current);
+			}
+		};
+	}, []);
+
+	const navigateAfterIndicatorMoves = (path: string) => {
+		if (routeChangeTimerRef.current !== null) {
+			window.clearTimeout(routeChangeTimerRef.current);
+		}
+
+		routeChangeTimerRef.current = window.setTimeout(() => {
+			navigate(path);
+			routeChangeTimerRef.current = null;
+		}, ROUTE_CHANGE_DELAY_MS);
+	};
+
 	const selectTab = (tab: BottomNavigationTab) => {
+		if (tab === selectedTab) {
+			return;
+		}
+
 		setSelectedTab(tab);
 
 		if (onTabChange) {
@@ -59,11 +84,11 @@ export function BottomNavigation({
 		}
 
 		if (tab === "home") {
-			navigate("/home");
+			navigateAfterIndicatorMoves("/home");
 		}
 
 		if (tab === "feedback") {
-			navigate("/groups");
+			navigateAfterIndicatorMoves("/groups");
 		}
 	};
 
