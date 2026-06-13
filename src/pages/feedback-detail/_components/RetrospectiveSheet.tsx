@@ -31,6 +31,7 @@ export function RetrospectiveSheet({
 	const [isGuideOpen, setIsGuideOpen] = useState(false);
 	const dragStartYRef = useRef<number | null>(null);
 	const dragOffsetRef = useRef(0);
+	const hasRetrospectiveContent = value.trim().length > 0;
 
 	const closeGuide = () => {
 		setIsGuideOpen(false);
@@ -112,7 +113,7 @@ export function RetrospectiveSheet({
 					onClick={closeSheet}
 					disabled={isSaving}
 					aria-label="회고 작성 닫기"
-					className="flex h-6 w-6 items-center justify-center border-0 bg-transparent p-0 disabled:opacity-40"
+					className="flex h-6 w-6 cursor-pointer items-center justify-center border-0 bg-transparent p-0 disabled:cursor-not-allowed disabled:opacity-40"
 				>
 					<CloseIcon aria-hidden="true" />
 				</button>
@@ -133,7 +134,7 @@ export function RetrospectiveSheet({
 						aria-controls="retrospective-guide"
 						aria-expanded={isGuideOpen}
 						aria-label="회고 작성 안내"
-						className="flex h-6 w-6 items-center justify-center border-0 bg-transparent p-0"
+						className="flex h-6 w-6 cursor-pointer items-center justify-center border-0 bg-transparent p-0"
 					>
 						<InfoIcon aria-hidden="true" className="h-[21px] w-[21px]" />
 					</button>
@@ -142,7 +143,10 @@ export function RetrospectiveSheet({
 						onClick={saveSheet}
 						disabled={isSaving}
 						aria-label="회고 저장하기"
-						className="flex h-6 w-6 items-center justify-center border-0 bg-transparent p-0 disabled:opacity-40"
+						className={[
+							"flex h-6 w-6 cursor-pointer items-center justify-center border-0 bg-transparent p-0 transition-colors disabled:cursor-not-allowed disabled:opacity-40",
+							hasRetrospectiveContent ? "text-[#0073FF]" : "text-[#6B7280]",
+						].join(" ")}
 					>
 						<CheckIcon aria-hidden="true" />
 					</button>
