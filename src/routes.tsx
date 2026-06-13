@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Navigate, Route, Routes } from "react-router";
+import { Navigate, Outlet, Route, Routes } from "react-router";
 import { useCurrentUser } from "@/features/auth/hooks";
 import { AuthCallbackPage } from "@/pages/auth/AuthCallbackPage";
 import { AuthSuccessPage } from "@/pages/auth/AuthSuccessPage";
@@ -16,131 +16,43 @@ import LoginPage from "@/pages/login/LoginPage";
 export function AppRoutes() {
 	return (
 		<Routes>
-			<Route
-				path="/"
-				element={
-					<ProtectedRoute>
-						<HomePage />
-					</ProtectedRoute>
-				}
-			/>
-			<Route
-				path="/home"
-				element={
-					<ProtectedRoute>
-						<HomePage />
-					</ProtectedRoute>
-				}
-			/>
-			<Route
-				path="/login"
-				element={
-					<WebViewShell>
-						<LoginPage />
-					</WebViewShell>
-				}
-			/>
-			<Route
-				path="/auth/callback"
-				element={
-					<WebViewShell>
-						<AuthCallbackPage />
-					</WebViewShell>
-				}
-			/>
-			<Route
-				path="/auth/success"
-				element={
-					<WebViewShell>
-						<AuthSuccessPage />
-					</WebViewShell>
-				}
-			/>
-			<Route
-				path="/forbidden"
-				element={
-					<WebViewShell>
-						<ForbiddenPage />
-					</WebViewShell>
-				}
-			/>
-			<Route
-				path="/feedback"
-				element={
-					<WebViewShell>
-						<FeedbackPage />
-					</WebViewShell>
-				}
-			/>
-			<Route
-				path="/feedback/detail/:answerId"
-				element={
-					<ProtectedRoute>
-						<WebViewShell>
-							<FeedbackDetailPage />
-						</WebViewShell>
-					</ProtectedRoute>
-				}
-			/>
-			<Route
-				path="/groups"
-				element={
-					<ProtectedRoute>
-						<WebViewShell>
-							<GroupsPage />
-						</WebViewShell>
-					</ProtectedRoute>
-				}
-			/>
-			<Route
-				path="/groups/:groupId"
-				element={
-					<ProtectedRoute>
-						<WebViewShell>
-							<GroupDetailPage />
-						</WebViewShell>
-					</ProtectedRoute>
-				}
-			/>
-			<Route
-				path="/groups/:groupId/analysis"
-				element={
-					<ProtectedRoute>
-						<WebViewShell>
-							<GroupAnalysisPage />
-						</WebViewShell>
-					</ProtectedRoute>
-				}
-			/>
-			<Route
-				path="/feedback-group/create"
-				element={
-					<ProtectedRoute>
-						<WebViewShell>
-							<FeedbackGroupCreatePage />
-						</WebViewShell>
-					</ProtectedRoute>
-				}
-			/>
-			<Route
-				path="/feedback-groups/new"
-				element={
-					<ProtectedRoute>
-						<WebViewShell>
-							<FeedbackGroupCreatePage />
-						</WebViewShell>
-					</ProtectedRoute>
-				}
-			/>
+			<Route element={<WebViewShell />}>
+				{/* public */}
+				<Route path="/login" element={<LoginPage />} />
+				<Route path="/auth/callback" element={<AuthCallbackPage />} />
+				<Route path="/auth/success" element={<AuthSuccessPage />} />
+				<Route path="/forbidden" element={<ForbiddenPage />} />
+				<Route path="/feedback" element={<FeedbackPage />} />
+
+				{/* protected */}
+				<Route element={<ProtectedRoute />}>
+					<Route index element={<HomePage />} />
+					<Route path="/home" element={<HomePage />} />
+					<Route
+						path="/feedback/detail/:answerId"
+						element={<FeedbackDetailPage />}
+					/>
+					<Route path="/groups" element={<GroupsPage />} />
+					<Route path="/groups/:groupId" element={<GroupDetailPage />} />
+					<Route
+						path="/groups/:groupId/analysis"
+						element={<GroupAnalysisPage />}
+					/>
+					<Route
+						path="/feedback-group/create"
+						element={<FeedbackGroupCreatePage />}
+					/>
+					<Route
+						path="/feedback-groups/new"
+						element={<FeedbackGroupCreatePage />}
+					/>
+				</Route>
+			</Route>
 		</Routes>
 	);
 }
 
-type ProtectedRouteProps = {
-	children: ReactNode;
-};
-
-function ProtectedRoute({ children }: ProtectedRouteProps) {
+function ProtectedRoute() {
 	const { isError, isLoading } = useCurrentUser();
 
 	if (isLoading) {
@@ -151,7 +63,7 @@ function ProtectedRoute({ children }: ProtectedRouteProps) {
 		return <Navigate to="/login" replace />;
 	}
 
-	return <>{children}</>;
+	return <Outlet />;
 }
 
 function AuthCheckScreen() {
@@ -174,13 +86,13 @@ function AuthCheckScreen() {
 }
 
 interface WebViewShellProps {
-	children: ReactNode;
+	children?: ReactNode;
 }
 
 function WebViewShell({ children }: WebViewShellProps) {
 	return (
 		<div className="max-w-[402px] mx-auto w-full min-h-screen text-left">
-			{children}
+			{children ?? <Outlet />}
 		</div>
 	);
 }
