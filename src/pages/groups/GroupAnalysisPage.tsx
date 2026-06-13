@@ -167,10 +167,10 @@ export function GroupAnalysisPage() {
 				};
 			}
 
-			return {
-				analysis: analysisResult.value,
-				coverLetter: coverLetterResult.value,
-			};
+			const analysis = analysisResult.value;
+			const coverLetter = coverLetterResult.value;
+
+			return { analysis, coverLetter };
 		},
 		onSuccess: (result) => {
 			navigate(`/groups/${id}/analysis/result`, {
