@@ -126,6 +126,11 @@ export type FeedbackAnalysisCreateResult = {
 	analysisId: number;
 };
 
+export type FeedbackCoverLetterCreateResult = {
+	id: number;
+	status: string;
+};
+
 export async function createFeedbackAnalysis(
 	groupId: number,
 	body: CreateFeedbackAnalysisRequest,
@@ -135,6 +140,21 @@ export async function createFeedbackAnalysis(
 	const response = await apiClient.post<
 		ApiResponse<FeedbackAnalysisCreateResult>
 	>(`/feedback-groups/${groupId}/analysis`, { body });
+
+	return unwrapApiData(response);
+}
+
+export async function createFeedbackCoverLetter(
+	groupId: number,
+	selfKeywords: string[],
+) {
+	validateFeedbackCoverLetterRequest(groupId, selfKeywords);
+
+	const response = await apiClient.post<
+		ApiResponse<FeedbackCoverLetterCreateResult>
+	>(`/feedback-groups/${groupId}/cover-letters`, {
+		body: { selfKeywords },
+	});
 
 	return unwrapApiData(response);
 }
@@ -153,5 +173,18 @@ function validateFeedbackAnalysisRequest(
 
 	if (new Set(answerIds).size !== answerIds.length) {
 		throw new ApiError(400, null, "중복된 피드백 응답이 포함되어 있습니다.");
+	}
+}
+
+function validateFeedbackCoverLetterRequest(
+	groupId: number,
+	selfKeywords: string[],
+) {
+	if (!Number.isInteger(groupId) || groupId <= 0) {
+		throw new ApiError(400, null, "유효한 피드백 그룹 ID가 필요합니다.");
+	}
+
+	if (selfKeywords.length === 0) {
+		throw new ApiError(400, null, "자기 인식 키워드를 선택해주세요.");
 	}
 }
