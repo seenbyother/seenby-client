@@ -3,33 +3,13 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import IcPlus from "@/assets/icons/ic_plus.svg?react";
 import { getFeedbackGroups } from "@/features/feedback-groups/api";
-import { ApiError } from "@/shared/api";
-import { BottomNavigation } from "@/shared/components";
+import { BottomNavigation, Header } from "@/shared/components";
 import { GroupCard } from "./_components/GroupCard";
+import { getErrorMessage } from "./utils";
 
 type FilterTab = "전체" | "진행중" | "종료";
 
 const FILTER_TABS: FilterTab[] = ["전체", "진행중", "종료"];
-
-function getErrorMessage(error: unknown) {
-	if (error instanceof ApiError) {
-		const body = error.body as { error?: unknown; message?: unknown };
-
-		if (typeof body?.message === "string") {
-			return body.message;
-		}
-
-		if (typeof body?.error === "string") {
-			return body.error;
-		}
-	}
-
-	if (error instanceof Error) {
-		return error.message;
-	}
-
-	return "피드백 내역을 불러오지 못했어요.";
-}
 
 export function GroupsPage() {
 	const navigate = useNavigate();
@@ -49,10 +29,11 @@ export function GroupsPage() {
 
 	return (
 		<div className="min-h-screen bg-[#F8F8F8] flex flex-col relative">
-			{/* Header */}
-			<header className="flex items-center justify-center relative px-5 pt-5 pb-[10px]">
-				<h1 className="text-[20px] font-normal text-black m-0">피드백 내역</h1>
-			</header>
+			<Header
+				title="피드백 내역"
+				onBack={() => navigate(-1)}
+				withBottomSpacing={false}
+			/>
 
 			{/* Filter Tabs */}
 			<div className="flex items-center gap-[5px] px-5 mt-3">
@@ -78,7 +59,7 @@ export function GroupsPage() {
 				) : isError ? (
 					<div className="flex h-48 flex-col items-center justify-center gap-3 px-5 text-center">
 						<span className="text-[16px] font-medium text-red-500">
-							{getErrorMessage(error)}
+							{getErrorMessage(error, "피드백 내역을 불러오지 못했어요.")}
 						</span>
 						<button
 							type="button"
