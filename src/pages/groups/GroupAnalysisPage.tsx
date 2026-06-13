@@ -3,6 +3,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import {
 	createFeedbackAnalysis,
+	createFeedbackCoverLetter,
+	type FeedbackAnalysisCreateResult,
+	type FeedbackCoverLetterCreateResult,
 	getFeedbackGroupDetail,
 } from "@/features/feedback-groups/api";
 import { Header } from "@/shared/components";
@@ -97,6 +100,15 @@ const SELF_KEYWORD_CATEGORIES: SelfKeywordCategory[] = [
 
 const MIN_ANALYSIS_FEEDBACK_COUNT = 3;
 
+type AnalysisSubmitResult = {
+	analysis: FeedbackAnalysisCreateResult;
+	coverLetter: FeedbackCoverLetterCreateResult;
+};
+
+type AnalysisSubmitFailure = {
+	message: string;
+};
+
 export function GroupAnalysisPage() {
 	const { groupId } = useParams<{ groupId: string }>();
 	const navigate = useNavigate();
@@ -130,14 +142,52 @@ export function GroupAnalysisPage() {
 
 	const [selectedIds, setSelectedIds] = useState<Set<number>>(() => new Set());
 
-	const analysisMutation = useMutation({
-		mutationFn: () =>
-			createFeedbackAnalysis(id, {
-				answerIds: Array.from(selectedIds),
-				selfKeywords: Array.from(selectedSelfKeywords),
-			}),
-		onSuccess: () => {
-			navigate(`/groups/${id}`);
+	const analysisMutation = useMutation<
+		AnalysisSubmitResult,
+		AnalysisSubmitFailure
+	>({
+		mutationFn: async () => {
+			const answerIds = Array.from(selectedIds);
+			const selfKeywords = Array.from(selectedSelfKeywords);
+			const [analysisResult, coverLetterResult] = await Promise.allSettled([
+				createFeedbackAnalysis(id, {
+					answerIds,
+					selfKeywords,
+				}),
+				createFeedbackCoverLetter(id, selfKeywords),
+			]);
+
+			if (
+				analysisResult.status !== "fulfilled" ||
+				coverLetterResult.status !== "fulfilled"
+			) {
+				throw {
+					message:
+						"AI 분석 요청을 완료하지 못했어요. 잠시 후 다시 시도해주세요.",
+				};
+			}
+
+			const analysis = analysisResult.value;
+			const coverLetter = coverLetterResult.value;
+
+			return { analysis, coverLetter };
+		},
+		onSuccess: (result) => {
+			navigate(`/groups/${id}/analysis/result`, {
+				state: {
+					status: "success",
+					analysis: result.analysis,
+					coverLetter: result.coverLetter,
+				},
+			});
+		},
+		onError: (error) => {
+			navigate(`/groups/${id}/analysis/result`, {
+				state: {
+					status: "error",
+					message: error.message,
+				},
+			});
 		},
 	});
 
