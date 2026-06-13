@@ -31,7 +31,7 @@ export function RetrospectiveCard({
 					<button
 						type="button"
 						onClick={onToggleEdit}
-						className="border-0 bg-transparent p-0 text-[14px] leading-[1.252] text-[#696969] underline underline-offset-2"
+						className="cursor-pointer border-0 bg-transparent p-0 text-[14px] leading-[1.252] text-[#696969] underline underline-offset-2"
 					>
 						{isEditing ? "저장하기" : "수정하기"}
 					</button>
