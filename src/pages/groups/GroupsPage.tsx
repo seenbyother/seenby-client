@@ -4,6 +4,7 @@ import { useNavigate } from "react-router";
 import IcArrowLeft from "@/assets/ic_arrow_left.svg?react";
 import IcPlus from "@/assets/icons/ic_plus.svg?react";
 import { getFeedbackGroups } from "@/features/feedback-groups/api";
+import { ApiError } from "@/shared/api";
 import { BottomNavigation } from "@/shared/components";
 import { GroupCard } from "./_components/GroupCard";
 
@@ -11,10 +12,30 @@ type FilterTab = "전체" | "진행중" | "종료";
 
 const FILTER_TABS: FilterTab[] = ["전체", "진행중", "종료"];
 
+function getErrorMessage(error: unknown) {
+	if (error instanceof ApiError) {
+		const body = error.body as { error?: unknown; message?: unknown };
+
+		if (typeof body?.message === "string") {
+			return body.message;
+		}
+
+		if (typeof body?.error === "string") {
+			return body.error;
+		}
+	}
+
+	if (error instanceof Error) {
+		return error.message;
+	}
+
+	return "피드백 내역을 불러오지 못했어요.";
+}
+
 export function GroupsPage() {
 	const navigate = useNavigate();
 	const [activeTab, setActiveTab] = useState<FilterTab>("전체");
-	const { data } = useQuery({
+	const { data, error, isError, isLoading, refetch } = useQuery({
 		queryKey: ["feedback-groups"],
 		queryFn: getFeedbackGroups,
 	});
@@ -33,6 +54,7 @@ export function GroupsPage() {
 			<header className="flex items-center justify-center relative px-5 py-[10px]">
 				<button
 					type="button"
+					onClick={() => navigate(-1)}
 					className="absolute left-5 bg-transparent border-none cursor-pointer outline-none p-[6px] -ml-[6px]"
 					aria-label="뒤로 가기"
 				>
@@ -58,7 +80,24 @@ export function GroupsPage() {
 
 			{/* Content */}
 			<main className="flex-1 px-5 mt-5 pb-32">
-				{filteredGroups.length === 0 ? (
+				{isLoading ? (
+					<div className="flex items-center justify-center h-48">
+						<span className="text-[20px] text-black/50">불러오는 중...</span>
+					</div>
+				) : isError ? (
+					<div className="flex h-48 flex-col items-center justify-center gap-3 px-5 text-center">
+						<span className="text-[16px] font-medium text-red-500">
+							{getErrorMessage(error)}
+						</span>
+						<button
+							type="button"
+							onClick={() => refetch()}
+							className="rounded-full border-none bg-[#0073FF] px-4 py-2 text-[14px] font-bold text-white"
+						>
+							다시 불러오기
+						</button>
+					</div>
+				) : filteredGroups.length === 0 ? (
 					<div className="flex items-center justify-center h-48">
 						<span className="text-[20px] text-black/50">생성한 피드백이 없어요</span>
 					</div>
@@ -84,7 +123,7 @@ export function GroupsPage() {
 				</button>
 			</div>
 
-			<BottomNavigation />
+			<BottomNavigation activeTab="feedback" />
 		</div>
 	);
 }

@@ -1,20 +1,45 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import linkCharacter from "@/assets/images/link.png";
 import kakaoIcon from "@/assets/kakao.svg";
 import LinkIcon from "@/assets/link.svg?react";
-import { createFeedbackGroup } from "@/features/feedback-groups/api";
+import {
+	createFeedbackGroup,
+	type FeedbackGroupsResponse,
+} from "@/features/feedback-groups/api";
 import { GroupCreateHeader } from "@/pages/feedback-group/_components/GroupCreateHeader";
 import { ShareButton } from "@/pages/feedback-group/_components/ShareButton";
 import { StepTitle } from "@/pages/feedback-group/_components/StepTitle";
 import { CONTEXT_OPTIONS, RELATION_OPTIONS } from "@/pages/feedback-group/constants";
+import { ApiError } from "@/shared/api";
 import { Button, Input, KeywordChip } from "@/shared/components";
 
 type CreateStep = "name" | "relation" | "context" | "complete";
 
+function getErrorMessage(error: unknown) {
+	if (error instanceof ApiError) {
+		const body = error.body as { error?: unknown; message?: unknown };
+
+		if (typeof body?.message === "string") {
+			return body.message;
+		}
+
+		if (typeof body?.error === "string") {
+			return body.error;
+		}
+	}
+
+	if (error instanceof Error) {
+		return error.message;
+	}
+
+	return "피드백 그룹을 생성하지 못했어요.";
+}
+
 export function FeedbackGroupCreatePage() {
 	const navigate = useNavigate();
+	const queryClient = useQueryClient();
 	const [step, setStep] = useState<CreateStep>("name");
 	const [groupName, setGroupName] = useState("");
 	const [relation, setRelation] = useState("");
@@ -29,6 +54,24 @@ export function FeedbackGroupCreatePage() {
 	const createMutation = useMutation({
 		mutationFn: createFeedbackGroup,
 		onSuccess: (group) => {
+			queryClient.setQueryData<FeedbackGroupsResponse>(
+				["feedback-groups"],
+				(current) => {
+					if (!current) {
+						return { groupCount: 1, groups: [group] };
+					}
+
+					if (current.groups.some((item) => item.id === group.id)) {
+						return current;
+					}
+
+					return {
+						groupCount: current.groupCount + 1,
+						groups: [group, ...current.groups],
+					};
+				},
+			);
+			queryClient.invalidateQueries({ queryKey: ["feedback-groups"] });
 			setLinkToken(group.linkToken);
 			setStep("complete");
 		},
@@ -179,6 +222,11 @@ export function FeedbackGroupCreatePage() {
 					</div>
 
 					<div className="px-5 pb-8">
+						{createMutation.isError && (
+							<p className="mb-3 mt-0 text-center text-[14px] font-medium text-red-500">
+								{getErrorMessage(createMutation.error)}
+							</p>
+						)}
 						<Button
 							onClick={submitContext}
 							disabled={!contextType.trim() || createMutation.isPending}
