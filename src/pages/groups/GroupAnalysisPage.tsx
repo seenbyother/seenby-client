@@ -167,10 +167,10 @@ export function GroupAnalysisPage() {
 				};
 			}
 
-			const analysis = analysisResult.value;
-			const coverLetter = coverLetterResult.value;
-
-			return { analysis, coverLetter };
+			return {
+				analysis: analysisResult.value,
+				coverLetter: coverLetterResult.value,
+			};
 		},
 		onSuccess: (result) => {
 			navigate(`/groups/${id}/analysis/result`, {
@@ -278,16 +278,12 @@ export function GroupAnalysisPage() {
 				/>
 
 				<div className="flex-1 overflow-y-auto px-5 mt-4 pb-36">
-					<section>
-						<h2 className="m-0 text-[24px] font-semibold leading-[160%] tracking-[-0.48px] text-black">
-							ㅇㅇ님의 키워드를 선택해주세요
-						</h2>
-						<p className="mt-3 mb-0 text-[14px] font-medium leading-[150%] text-[#71717A]">
-							{group.name}에서스스로 생각하는 ㅇㅇ님의 키워드를
-							<br />
-							자유롭게 선택해주세요
-						</p>
-					</section>
+					<h1 className="m-0 whitespace-pre-line text-[26px] font-bold leading-[135%] text-black">
+						내가 생각하는{"\n"}나의 모습을 골라주세요
+					</h1>
+					<p className="mt-3 mb-0 text-[15px] font-medium leading-[150%] text-[#696969]">
+						AI 분석에서 비교할 자기 인식 키워드로 사용돼요
+					</p>
 
 					<div className="mt-7 flex flex-col gap-3">
 						{SELF_KEYWORD_CATEGORIES.map((category) => (
@@ -340,9 +336,7 @@ export function GroupAnalysisPage() {
 				withBottomSpacing={false}
 			/>
 
-			{/* Content */}
 			<div className="flex flex-col gap-3 px-5 mt-4 pb-36">
-				{/* 전체 선택 */}
 				<button
 					type="button"
 					onClick={toggleAll}
@@ -383,7 +377,6 @@ export function GroupAnalysisPage() {
 				)}
 			</div>
 
-			{/* 제출 하기 FAB */}
 			<FloatingActionButton
 				onClick={goToSelfKeywordStep}
 				disabled={!canGoToSelfKeywordStep}
@@ -418,29 +411,34 @@ function SelfKeywordSection({
 	onToggleKeyword,
 }: SelfKeywordSectionProps) {
 	return (
-		<section>
+		<section className="rounded-[20px] bg-white px-4 py-4">
 			<button
 				type="button"
 				onClick={onToggleOpen}
-				className="flex items-center gap-1 border-none bg-transparent p-0 text-left"
+				className="flex w-full items-center justify-between border-none bg-transparent p-0 text-left"
 				aria-expanded={isOpen}
 			>
+				<div>
+					<h2 className="m-0 text-[18px] font-bold leading-[135%] text-black">
+						{category.title}
+					</h2>
+					<p className="mt-1 mb-0 text-[13px] font-medium leading-[150%] text-[#8A8A8A]">
+						{category.description}
+					</p>
+				</div>
 				<span
 					className={[
-						"flex size-6 items-center justify-center text-[20px] font-medium leading-none text-black transition-transform duration-200",
-						isOpen ? "" : "rotate-180",
+						"ml-4 text-[18px] font-bold text-[#A9A9A9] transition-transform duration-200",
+						isOpen ? "rotate-180" : "",
 					].join(" ")}
 					aria-hidden="true"
 				>
-					⌃
+					⌄
 				</span>
-				<h2 className="m-0 text-[20px] font-medium leading-[150%] text-black">
-					{category.title}
-				</h2>
 			</button>
 
 			{isOpen && (
-				<div className="mt-3 flex flex-wrap gap-x-4 gap-y-2">
+				<div className="mt-5 flex flex-wrap gap-x-2 gap-y-3">
 					{category.keywords.map((keyword) => (
 						<SelfKeywordChip
 							key={keyword}
@@ -467,10 +465,10 @@ function SelfKeywordChip({ label, selected, onClick }: SelfKeywordChipProps) {
 			type="button"
 			onClick={onClick}
 			className={[
-				"min-h-[40px] rounded-full px-[14px] py-2 text-[16px] font-medium leading-[150%] transition-colors",
+				"min-h-[36px] rounded-full border px-[14px] py-[7px] text-[15px] font-medium leading-none transition-colors",
 				selected
-					? "border border-[rgba(0,115,255,0.82)] bg-[rgba(0,115,255,0.82)] text-white"
-					: "border border-[#EDF0FF] bg-transparent text-black",
+					? "border-[#2F80FF] bg-[#2F80FF] text-white"
+					: "border-[#E6EBF5] bg-white text-black",
 			].join(" ")}
 		>
 			{label}
