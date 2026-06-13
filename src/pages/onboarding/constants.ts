@@ -1,75 +1,22 @@
-export const ONBOARDING_KEYWORD_STEPS = [
-	{
-		id: "mood",
-		title: (name: string) => `${name} 님은\n어떤 분위기의 사람인가요?`,
-		subtitle: "첫인상이나 분위기에 가까운 단어를 골라주세요",
-		keywords: [
-			"유쾌한",
-			"차분한",
-			"활동적인",
-			"행복한",
-			"따뜻한",
-			"친절한",
-			"상냥한",
-			"외향적인",
-			"내향적인",
-			"내성적인",
-			"수줍어하는",
-			"똑똑한",
-			"품위있는",
-			"강한 인상",
-			"낙천적인",
-			"긴장한",
-			"감정적인",
-			"관대한",
-		],
-	},
-	{
-		id: "relationship",
-		title: (name: string) => `${name} 님은 함께 있을 때\n어떤 모습인가요?`,
-		subtitle: "성격이나 사람을 대하는 모습과 가까운 단어를 골라주세요",
-		keywords: [
-			"믿음직한",
-			"도움이 되는",
-			"철저한",
-			"마음이 넓은",
-			"동정심 있는",
-			"솔직한",
-			"조심성 있는",
-			"융통성 있는",
-			"성숙한",
-			"자기 주장이 강한",
-			"참을성 있는",
-			"논리적인",
-			"실용적인",
-			"겸손한",
-			"독립적인",
-			"민감한",
-			"자발적인",
-			"생각이 깊은",
-		],
-	},
-	{
-		id: "identity",
-		title: (name: string) => `${name} 님을 더 잘 표현하는 단어를\n골라주세요`,
-		subtitle: "성격이나 가치관에 가까운 단어들이에요",
-		keywords: [
-			"재능있는",
-			"영리한",
-			"독창적인",
-			"재치있는",
-			"총명한",
-			"박식한",
-			"지혜가 있는",
-			"용기있는",
-			"적극적인",
-			"자신감 있는",
-			"이상주의적인",
-			"엄격한",
-			"양향적인",
-			"자의식이 강한",
-			"까다로운",
-			"어리숙함",
-		],
-	},
-] as const;
+import { SELF_KEYWORD_CATEGORIES } from "@/features/onboarding/selfKeywords";
+
+const ONBOARDING_TITLE_BY_CATEGORY = {
+	mood: (name: string) => `${name} 님은\n어떤 분위기의 사람인가요?`,
+	relationship: (name: string) => `${name} 님은 함께 있을 때\n어떤 모습인가요?`,
+	tendency: (name: string) => `${name} 님을 더 잘 표현하는 단어를\n골라주세요`,
+};
+
+const ONBOARDING_SUBTITLE_BY_CATEGORY = {
+	mood: "첫인상이나 분위기에 가까운 단어를 골라주세요",
+	relationship: "성격이나 사람을 대하는 모습과 가까운 단어를 골라주세요",
+	tendency: "성격이나 가치관에 가까운 단어들이에요",
+};
+
+export const ONBOARDING_KEYWORD_STEPS = SELF_KEYWORD_CATEGORIES.map(
+	(category) => ({
+		id: category.id,
+		title: ONBOARDING_TITLE_BY_CATEGORY[category.id],
+		subtitle: ONBOARDING_SUBTITLE_BY_CATEGORY[category.id],
+		keywords: category.keywords,
+	}),
+);
