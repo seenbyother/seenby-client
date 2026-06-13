@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { getCurrentUserName, useCurrentUser } from "@/features/auth/hooks";
 import { markOnboardingCompleted } from "@/features/onboarding/storage";
-import { getOnboardingUserName } from "@/features/onboarding/user";
 import { OnboardingCompleteStep } from "./_components/OnboardingCompleteStep";
 import { OnboardingIntroStep } from "./_components/OnboardingIntroStep";
 import { OnboardingKeywordStep } from "./_components/OnboardingKeywordStep";
@@ -11,13 +11,18 @@ type OnboardingStep = "intro" | "keywords" | "complete";
 
 export function OnboardingPage() {
 	const navigate = useNavigate();
+	const { data: currentUser } = useCurrentUser();
 	const [step, setStep] = useState<OnboardingStep>("intro");
 	const [keywordStepIndex, setKeywordStepIndex] = useState(0);
 	const [selectedKeywordsByStep, setSelectedKeywordsByStep] = useState<
 		Record<string, string[]>
 	>({});
 
-	const userName = getOnboardingUserName();
+	if (!currentUser) {
+		return null;
+	}
+
+	const userName = getCurrentUserName(currentUser);
 	const keywordStep = ONBOARDING_KEYWORD_STEPS[keywordStepIndex];
 	const selectedKeywords = selectedKeywordsByStep[keywordStep.id] ?? [];
 

@@ -25,12 +25,12 @@ export function AppRoutes() {
 				<Route path="/auth/success" element={<AuthSuccessPage />} />
 				<Route path="/forbidden" element={<ForbiddenPage />} />
 				<Route path="/feedback" element={<FeedbackPage />} />
-				<Route path="/onboarding" element={<OnboardingPage />} />
 
 				{/* protected */}
 				<Route element={<ProtectedRoute />}>
 					<Route index element={<HomePage />} />
 					<Route path="/home" element={<HomePage />} />
+					<Route path="/onboarding" element={<OnboardingPage />} />
 					<Route
 						path="/feedback/detail/:answerId"
 						element={<FeedbackDetailPage />}
