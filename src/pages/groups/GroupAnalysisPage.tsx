@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import IcArrowLeft from "@/assets/ic_arrow_left.svg?react";
-import characterCheer from "@/assets/images/character_cheer.png";
 import type { FeedbackItem } from "./_components/FeedbackCard";
 
 const MOCK_FEEDBACKS: Record<number, FeedbackItem[]> = {
@@ -13,12 +12,100 @@ const MOCK_FEEDBACKS: Record<number, FeedbackItem[]> = {
 	],
 };
 
-type Step = "select" | "submitted";
+type Step = "selectFeedback" | "selectSelfKeywords";
+type SelfKeywordCategoryId = "mood" | "relationship" | "tendency";
+
+type SelfKeywordCategory = {
+	id: SelfKeywordCategoryId;
+	title: string;
+	description: string;
+	keywords: string[];
+};
+
+const SELF_KEYWORD_CATEGORIES: SelfKeywordCategory[] = [
+	{
+		id: "mood",
+		title: "분위기",
+		description: "평소 나의 첫인상이나 분위기에 가까운 단어를 골라주세요",
+		keywords: [
+			"유쾌한",
+			"차분한",
+			"활동적인",
+			"행복한",
+			"따뜻한",
+			"친절한",
+			"상냥한",
+			"외향적인",
+			"내향적인",
+			"수줍어하는",
+			"똑똑한",
+			"품위있는",
+			"강한 인상",
+			"낙천적인",
+			"긴장한",
+			"감정적인",
+			"관대한",
+		],
+	},
+	{
+		id: "relationship",
+		title: "관계",
+		description: "성격이나 사람을 대하는 모습과 가까운 단어를 골라주세요",
+		keywords: [
+			"믿음직한",
+			"도움이 되는",
+			"철저한",
+			"마음이 넓은",
+			"동정심 있는",
+			"솔직한",
+			"조심성 있는",
+			"융통성 있는",
+			"성숙한",
+			"자기 주장이 강한",
+			"참을성 있는",
+			"논리적인",
+			"실용적인",
+			"겸손한",
+			"독립적인",
+			"민감한",
+			"자발적인",
+			"생각이 깊은",
+		],
+	},
+	{
+		id: "tendency",
+		title: "성향",
+		description: "성격이나 가치관에 가까운 단어를 골라주세요",
+		keywords: [
+			"재능있는",
+			"영리한",
+			"독창적인",
+			"재치있는",
+			"총명한",
+			"박식한",
+			"지혜가 있는",
+			"용기있는",
+			"적극적인",
+			"자신감 있는",
+			"이상주의적인",
+			"엄격한",
+			"양향적인",
+			"자의식이 강한",
+			"까다로운",
+			"어리숙함",
+		],
+	},
+];
 
 export function GroupAnalysisPage() {
 	const { groupId } = useParams<{ groupId: string }>();
 	const navigate = useNavigate();
-	const [step, setStep] = useState<Step>("select");
+	const [step, setStep] = useState<Step>("selectFeedback");
+	const [openCategoryId, setOpenCategoryId] =
+		useState<SelfKeywordCategoryId>("mood");
+	const [selectedSelfKeywords, setSelectedSelfKeywords] = useState<Set<string>>(
+		() => new Set(),
+	);
 
 	const id = Number(groupId);
 	const feedbacks = MOCK_FEEDBACKS[id] ?? [];
@@ -27,10 +114,13 @@ export function GroupAnalysisPage() {
 		() => new Set(feedbacks.map((f) => f.id)),
 	);
 
-	const allSelected = feedbacks.length > 0 && selectedIds.size === feedbacks.length;
+	const allSelected =
+		feedbacks.length > 0 && selectedIds.size === feedbacks.length;
 
 	const toggleAll = () => {
-		setSelectedIds(allSelected ? new Set() : new Set(feedbacks.map((f) => f.id)));
+		setSelectedIds(
+			allSelected ? new Set() : new Set(feedbacks.map((f) => f.id)),
+		);
 	};
 
 	const toggleItem = (itemId: number) => {
@@ -42,50 +132,68 @@ export function GroupAnalysisPage() {
 		});
 	};
 
-	if (step === "submitted") {
+	const toggleSelfKeyword = (keyword: string) => {
+		setSelectedSelfKeywords((prev) => {
+			const next = new Set(prev);
+			if (next.has(keyword)) next.delete(keyword);
+			else next.add(keyword);
+			return next;
+		});
+	};
+
+	if (step === "selectSelfKeywords") {
 		return (
-			<div className="min-h-screen bg-[#F8F8F8] relative">
-				{/* Header */}
-				<header className="flex items-center justify-center relative px-5 py-[10px]">
+			<div className="min-h-screen bg-[#F8F8F8] flex flex-col relative">
+				<header className="flex items-center px-5 py-[10px]">
 					<button
 						type="button"
-						onClick={() => navigate(`/groups/${id}`)}
-						className="absolute left-5 bg-transparent border-none cursor-pointer outline-none p-[6px] -ml-[6px]"
+						onClick={() => setStep("selectFeedback")}
+						className="bg-transparent border-none cursor-pointer outline-none p-[6px] -ml-[6px]"
 						aria-label="뒤로 가기"
 					>
 						<IcArrowLeft width={32} height={32} />
 					</button>
-					<span className="text-[20px] text-black">피드백 그룹 만들기</span>
 				</header>
 
-				<p
-					className="w-full m-0 mt-[145px] text-center text-[32px] font-semibold text-black leading-[160%]"
-					style={{ letterSpacing: "-0.02em" }}
-				>
-					피드백이 제출되었어요
-				</p>
+				<div className="flex-1 overflow-y-auto px-5 mt-4 pb-36">
+					<h1 className="m-0 whitespace-pre-line text-[26px] font-bold leading-[135%] text-black">
+						내가 생각하는{"\n"}나의 모습을 골라주세요
+					</h1>
+					<p className="mt-3 mb-0 text-[15px] font-medium leading-[150%] text-[#696969]">
+						AI 분석에서 비교할 자기 인식 키워드로 사용돼요
+					</p>
 
-				<p className="w-full m-0 mt-[20px] text-center text-[16px] font-medium text-black leading-[150%]">
-					분석하는데 시간이 조금 걸려요
-				</p>
+					<div className="mt-7 flex flex-col gap-3">
+						{SELF_KEYWORD_CATEGORIES.map((category) => (
+							<SelfKeywordSection
+								key={category.id}
+								category={category}
+								isOpen={openCategoryId === category.id}
+								selectedKeywords={selectedSelfKeywords}
+								onToggleOpen={() => setOpenCategoryId(category.id)}
+								onToggleKeyword={toggleSelfKeyword}
+							/>
+						))}
+					</div>
+				</div>
 
-				<img
-					src={characterCheer}
-					alt=""
-					width={123}
-					height={135}
-					className="block mx-auto mt-[51px]"
-				/>
-
-				{/* 확인 버튼: Figma y:798 → bottom 20px */}
-				<div className="absolute bottom-5 left-0 right-0 px-5">
+				<div className="absolute bottom-10 right-5">
 					<button
 						type="button"
-						onClick={() => navigate("/groups")}
-						className="w-full rounded-[16px] border-none cursor-pointer flex items-center justify-center"
-						style={{ background: "#0073FF", height: 56 }}
+						onClick={() => navigate(`/groups/${id}`)}
+						disabled={selectedSelfKeywords.size === 0}
+						className="flex items-center gap-[10px] px-5 py-[14px] rounded-[60px] border-none cursor-pointer disabled:cursor-not-allowed"
+						style={{
+							background: selectedSelfKeywords.size > 0 ? "#0073FF" : "#A9A9A9",
+							boxShadow: "0px 0px 3.1px 1px rgba(0,0,0,0.25)",
+						}}
 					>
-						<span className="text-[17px] font-semibold text-white">확인</span>
+						<span
+							className="text-[16px] font-medium"
+							style={{ color: "#EDF0FF" }}
+						>
+							제출 하기 →
+						</span>
 					</button>
 				</div>
 			</div>
@@ -115,7 +223,9 @@ export function GroupAnalysisPage() {
 					className="flex items-center gap-2 bg-transparent border-none cursor-pointer p-0"
 				>
 					<CircleCheckbox checked={allSelected} />
-					<span className="text-[16px] font-medium text-black leading-[21px]">전체 선택</span>
+					<span className="text-[16px] font-medium text-black leading-[21px]">
+						전체 선택
+					</span>
 				</button>
 
 				{/* 피드백 목록 */}
@@ -144,7 +254,7 @@ export function GroupAnalysisPage() {
 			<div className="absolute bottom-10 right-5">
 				<button
 					type="button"
-					onClick={() => setStep("submitted")}
+					onClick={() => setStep("selectSelfKeywords")}
 					disabled={selectedIds.size === 0}
 					className="flex items-center gap-[10px] px-5 py-[14px] rounded-[60px] border-none cursor-pointer"
 					style={{
@@ -152,8 +262,11 @@ export function GroupAnalysisPage() {
 						boxShadow: "0px 0px 3.1px 1px rgba(0,0,0,0.25)",
 					}}
 				>
-					<span className="text-[16px] font-medium" style={{ color: "#EDF0FF" }}>
-						제출 하기 →
+					<span
+						className="text-[16px] font-medium"
+						style={{ color: "#EDF0FF" }}
+					>
+						다음 →
 					</span>
 				</button>
 			</div>
@@ -161,11 +274,98 @@ export function GroupAnalysisPage() {
 	);
 }
 
+type SelfKeywordSectionProps = {
+	category: SelfKeywordCategory;
+	isOpen: boolean;
+	selectedKeywords: Set<string>;
+	onToggleOpen: () => void;
+	onToggleKeyword: (keyword: string) => void;
+};
+
+function SelfKeywordSection({
+	category,
+	isOpen,
+	selectedKeywords,
+	onToggleOpen,
+	onToggleKeyword,
+}: SelfKeywordSectionProps) {
+	return (
+		<section className="rounded-[20px] bg-white px-4 py-4">
+			<button
+				type="button"
+				onClick={onToggleOpen}
+				className="flex w-full items-center justify-between border-none bg-transparent p-0 text-left"
+				aria-expanded={isOpen}
+			>
+				<div>
+					<h2 className="m-0 text-[18px] font-bold leading-[135%] text-black">
+						{category.title}
+					</h2>
+					<p className="mt-1 mb-0 text-[13px] font-medium leading-[150%] text-[#8A8A8A]">
+						{category.description}
+					</p>
+				</div>
+				<span
+					className={[
+						"ml-4 text-[18px] font-bold text-[#A9A9A9] transition-transform duration-200",
+						isOpen ? "rotate-180" : "",
+					].join(" ")}
+					aria-hidden="true"
+				>
+					⌄
+				</span>
+			</button>
+
+			{isOpen && (
+				<div className="mt-5 flex flex-wrap gap-x-2 gap-y-3">
+					{category.keywords.map((keyword) => (
+						<SelfKeywordChip
+							key={keyword}
+							label={keyword}
+							selected={selectedKeywords.has(keyword)}
+							onClick={() => onToggleKeyword(keyword)}
+						/>
+					))}
+				</div>
+			)}
+		</section>
+	);
+}
+
+type SelfKeywordChipProps = {
+	label: string;
+	selected: boolean;
+	onClick: () => void;
+};
+
+function SelfKeywordChip({ label, selected, onClick }: SelfKeywordChipProps) {
+	return (
+		<button
+			type="button"
+			onClick={onClick}
+			className={[
+				"min-h-[36px] rounded-full border px-[14px] py-[7px] text-[15px] font-medium leading-none transition-colors",
+				selected
+					? "border-[#2F80FF] bg-[#2F80FF] text-white"
+					: "border-[#E6EBF5] bg-white text-black",
+			].join(" ")}
+		>
+			{label}
+		</button>
+	);
+}
+
 function CircleCheckbox({ checked }: { checked: boolean }) {
 	if (checked) {
 		return (
 			<div className="w-6 h-6 rounded-full bg-[#3182F6] flex items-center justify-center flex-shrink-0">
-				<svg width="12" height="9" viewBox="0 0 12 9" fill="none">
+				<svg
+					width="12"
+					height="9"
+					viewBox="0 0 12 9"
+					fill="none"
+					aria-hidden="true"
+				>
 					<path
 						d="M1 4L4.5 7.5L11 1"
 						stroke="white"
@@ -178,6 +378,9 @@ function CircleCheckbox({ checked }: { checked: boolean }) {
 		);
 	}
 	return (
-		<div className="w-6 h-6 rounded-full border-2 flex-shrink-0" style={{ borderColor: "#DADADA" }} />
+		<div
+			className="w-6 h-6 rounded-full border-2 flex-shrink-0"
+			style={{ borderColor: "#DADADA" }}
+		/>
 	);
 }
