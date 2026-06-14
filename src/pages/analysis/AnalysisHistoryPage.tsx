@@ -36,6 +36,7 @@ export function AnalysisHistoryPage() {
 	const historyItems = isAnalysisTab
 		? getAnalysisHistoryItems(analysisQuery.data)
 		: getCoverLetterHistoryItems(coverLettersQuery.data);
+	const isRefreshing = activeQuery.isFetching && !activeQuery.isLoading;
 
 	return (
 		<div className="min-h-screen bg-[#F8F8F8] flex flex-col relative">
@@ -72,7 +73,19 @@ export function AnalysisHistoryPage() {
 			</div>
 
 			{/* Content */}
-			<main className="flex-1 px-[17px] mt-4 pb-32">
+			<main className="flex-1 px-[17px] mt-3 pb-32">
+				<div className="mb-3 flex justify-end">
+					<button
+						type="button"
+						onClick={() => activeQuery.refetch()}
+						disabled={activeQuery.isFetching}
+						className="flex h-8 w-8 items-center justify-center border-none bg-transparent p-0 text-[#0073FF] disabled:cursor-not-allowed disabled:opacity-50"
+						aria-label={isRefreshing ? "새로고침 중" : "새로고침"}
+					>
+						<RefreshIcon className={isRefreshing ? "animate-spin" : ""} />
+					</button>
+				</div>
+
 				{activeQuery.isLoading ? (
 					<div className="flex items-center justify-center h-48">
 						<span className="text-[20px] text-black/50">불러오는 중...</span>
@@ -105,8 +118,15 @@ export function AnalysisHistoryPage() {
 								key={`${activeTab}-${item.id}`}
 								title={item.title}
 								dateLabel={item.dateLabel}
-								isProcessing={item.isProcessing}
-								onClick={() => navigate(item.href)}
+								statusLabel={item.statusLabel}
+								statusTone={item.statusTone}
+								disabled={item.disabled}
+								dimmed={item.dimmed}
+								onClick={() => {
+									if (!item.disabled) {
+										navigate(item.href);
+									}
+								}}
 							/>
 						))}
 					</div>
@@ -123,7 +143,10 @@ type VisibleHistoryItem = {
 	title: string;
 	dateLabel: string;
 	href: string;
-	isProcessing: boolean;
+	statusLabel?: string;
+	statusTone?: "blue" | "gray" | "red";
+	disabled?: boolean;
+	dimmed?: boolean;
 };
 
 function getAnalysisHistoryItems(
@@ -138,7 +161,8 @@ function getAnalysisHistoryItems(
 		title: item.group.title,
 		dateLabel: formatYearMonthDay(item.analyzedAt ?? item.createdAt),
 		href: `/analysis/ai/${item.analysisId}`,
-		isProcessing: item.status === "PROCESSING",
+		statusLabel: item.status === "PROCESSING" ? "작성 중" : "완료",
+		statusTone: item.status === "PROCESSING" ? "blue" : "gray",
 	}));
 }
 
@@ -154,6 +178,77 @@ function getCoverLetterHistoryItems(
 		title: item.feedbackGroupName,
 		dateLabel: formatYearMonthDay(item.completedAt ?? item.createdAt),
 		href: `/cover-letters/${item.id}`,
-		isProcessing: item.status === "PROCESSING",
+		statusLabel: getCoverLetterStatusLabel(item.status),
+		statusTone: getCoverLetterStatusTone(item.status),
+		disabled: item.status === "FAILED",
+		dimmed: item.status === "FAILED",
 	}));
+}
+
+function getCoverLetterStatusLabel(
+	status: CoverLettersResponse["coverLetters"][number]["status"],
+) {
+	switch (status) {
+		case "PROCESSING":
+			return "작성 중";
+		case "FAILED":
+			return "실패";
+		default:
+			return "완료";
+	}
+}
+
+function getCoverLetterStatusTone(
+	status: CoverLettersResponse["coverLetters"][number]["status"],
+): VisibleHistoryItem["statusTone"] {
+	switch (status) {
+		case "PROCESSING":
+			return "blue";
+		case "FAILED":
+			return "red";
+		default:
+			return "gray";
+	}
+}
+
+function RefreshIcon({ className = "" }: { className?: string }) {
+	return (
+		<svg
+			width="18"
+			height="18"
+			viewBox="0 0 24 24"
+			fill="none"
+			className={className}
+			aria-hidden="true"
+		>
+			<path
+				d="M20 6v5h-5"
+				stroke="currentColor"
+				strokeWidth="2"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<path
+				d="M4 18v-5h5"
+				stroke="currentColor"
+				strokeWidth="2"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<path
+				d="M6.1 9A7 7 0 0 1 17.7 6.4L20 11"
+				stroke="currentColor"
+				strokeWidth="2"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<path
+				d="M17.9 15A7 7 0 0 1 6.3 17.6L4 13"
+				stroke="currentColor"
+				strokeWidth="2"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+		</svg>
+	);
 }
