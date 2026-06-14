@@ -1,11 +1,10 @@
-import { API_BASE_URL, ApiError, apiClient } from "@/shared/api";
-
-type ApiResponse<TData> = {
-	statuscode?: string;
-	statusCode?: string;
-	message?: string;
-	data: TData | null;
-};
+import {
+	API_BASE_URL,
+	ApiError,
+	type ApiResponse,
+	apiClient,
+	unwrapApiData,
+} from "@/shared/api";
 
 export type AuthTokenMetadata = {
 	tokenType: string;
@@ -86,34 +85,4 @@ export async function getCurrentUser() {
 	);
 
 	return unwrapApiData(response);
-}
-
-function unwrapApiData<TData>(response: ApiResponse<TData> | TData) {
-	if (!isApiResponse(response)) {
-		return response;
-	}
-
-	const statusCode = response.statusCode ?? response.statuscode;
-
-	if (statusCode && statusCode !== "200") {
-		throw new ApiError(Number(statusCode) || 400, response, response.message);
-	}
-
-	if (response.data === null || response.data === undefined) {
-		throw new ApiError(400, response, response.message);
-	}
-
-	return response.data;
-}
-
-function isApiResponse<TData>(
-	response: ApiResponse<TData> | TData,
-): response is ApiResponse<TData> {
-	if (!response || typeof response !== "object") {
-		return false;
-	}
-
-	return (
-		"data" in response || "statusCode" in response || "statuscode" in response
-	);
 }

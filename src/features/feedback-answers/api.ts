@@ -1,11 +1,9 @@
-import { ApiError, apiClient } from "@/shared/api";
-
-type ApiResponse<TData> = {
-	statuscode?: string;
-	statusCode?: string;
-	message?: string;
-	data?: TData | null;
-};
+import {
+	type ApiResponse,
+	apiClient,
+	ensureApiSuccess,
+	unwrapApiData,
+} from "@/shared/api";
 
 export type ExperienceFeedback = {
 	id: number;
@@ -46,36 +44,4 @@ export async function saveFeedbackRetrospect(
 	);
 
 	ensureApiSuccess(response);
-}
-
-function unwrapApiData<TData>(response: ApiResponse<TData> | TData) {
-	if (!isApiResponse(response)) {
-		return response;
-	}
-
-	if (response.data === null || response.data === undefined) {
-		throw new ApiError(400, response, response.message);
-	}
-
-	return response.data;
-}
-
-function ensureApiSuccess<TData>(response: ApiResponse<TData>) {
-	const statusCode = response.statusCode ?? response.statuscode;
-
-	if (statusCode && statusCode !== "200") {
-		throw new ApiError(Number(statusCode) || 400, response, response.message);
-	}
-}
-
-function isApiResponse<TData>(
-	response: ApiResponse<TData> | TData,
-): response is ApiResponse<TData> {
-	if (!response || typeof response !== "object") {
-		return false;
-	}
-
-	return (
-		"data" in response || "statusCode" in response || "statuscode" in response
-	);
 }
