@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router";
+import { getCurrentUserName, useCurrentUser } from "@/features/auth/hooks";
 import {
 	createFeedbackAnalysis,
 	createFeedbackCoverLetter,
@@ -50,6 +51,8 @@ export function GroupAnalysisPage() {
 
 	const id = Number(groupId);
 	const isValidGroupId = Number.isInteger(id) && id > 0;
+	const { data: currentUser } = useCurrentUser();
+	const userName = getCurrentUserName(currentUser);
 
 	const {
 		data: group,
@@ -257,12 +260,16 @@ export function GroupAnalysisPage() {
 				/>
 
 				<div className="flex-1 overflow-y-auto px-5 mt-4 pb-36">
-					<h1 className="m-0 whitespace-pre-line text-[26px] font-bold leading-[135%] text-black">
-						내가 생각하는{"\n"}나의 모습을 골라주세요
-					</h1>
-					<p className="mt-3 mb-0 text-[15px] font-medium leading-[150%] text-[#696969]">
-						AI 분석에서 비교할 자기 인식 키워드로 사용돼요
-					</p>
+					<section>
+						<h1 className="m-0 text-[24px] font-bold leading-[160%] tracking-[-0.48px] text-black">
+							{userName}님의 키워드를 선택해주세요
+						</h1>
+						<p className="mt-3 mb-0 text-[16px] font-medium leading-[150%] text-[#71717A]">
+							{group.name}에서 스스로 생각하는 {userName}님의 키워드를
+							<br />
+							자유롭게 선택해주세요
+						</p>
+					</section>
 
 					<div className="mt-7 flex flex-col gap-3">
 						{SELF_KEYWORD_CATEGORIES.map((category) => (
@@ -416,44 +423,29 @@ function SelfKeywordSection({
 	const isLimitReached = selectedCount >= maxSelectedCount;
 
 	return (
-		<section className="rounded-[20px] bg-white px-4 py-4">
+		<section>
 			<button
 				type="button"
 				onClick={onToggleOpen}
-				className="flex w-full items-center justify-between border-none bg-transparent p-0 text-left"
+				className="flex items-center gap-1 border-none bg-transparent p-0 text-left"
 				aria-expanded={isOpen}
 			>
-				<div>
-					<div className="flex items-center gap-2">
-						<h2 className="m-0 text-[18px] font-bold leading-[135%] text-black">
-							{category.title}
-						</h2>
-						<span
-							className={[
-								"text-[13px] font-semibold leading-[150%]",
-								isLimitReached ? "text-[#2F80FF]" : "text-[#8A8A8A]",
-							].join(" ")}
-						>
-							{selectedCount}/{maxSelectedCount}
-						</span>
-					</div>
-					<p className="mt-1 mb-0 text-[13px] font-medium leading-[150%] text-[#8A8A8A]">
-						{category.description}
-					</p>
-				</div>
 				<span
 					className={[
-						"ml-4 text-[18px] font-bold text-[#A9A9A9] transition-transform duration-200",
-						isOpen ? "rotate-180" : "",
+						"flex size-6 items-center justify-center text-[20px] font-medium leading-none text-black transition-transform duration-200",
+						isOpen ? "" : "rotate-180",
 					].join(" ")}
 					aria-hidden="true"
 				>
-					⌄
+					⌃
 				</span>
+				<h2 className="m-0 text-[24px] font-medium leading-[150%] text-black">
+					{category.title}
+				</h2>
 			</button>
 
 			{isOpen && (
-				<div className="mt-5 flex flex-wrap gap-x-2 gap-y-3">
+				<div className="mt-3 flex flex-wrap gap-x-4 gap-y-2">
 					{category.keywords.map((keyword) => (
 						<SelfKeywordChip
 							key={keyword}
@@ -493,10 +485,10 @@ function SelfKeywordChip({
 			onClick={onClick}
 			disabled={disabled}
 			className={[
-				"min-h-[36px] rounded-full border px-[14px] py-[7px] text-[15px] font-medium leading-none transition-colors disabled:cursor-not-allowed disabled:opacity-35",
+				"min-h-[40px] rounded-full border px-[14px] py-2 text-[16px] font-medium leading-[150%] transition-colors disabled:cursor-not-allowed disabled:opacity-35",
 				selected
 					? "border-[#2F80FF] bg-[#2F80FF] text-white"
-					: "border-[#E6EBF5] bg-white text-black",
+					: "border-[#EDF0FF] bg-transparent text-black",
 			].join(" ")}
 		>
 			{label}
