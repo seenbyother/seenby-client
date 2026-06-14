@@ -114,14 +114,14 @@ export async function createFeedbackAnalysis(
 
 export async function createFeedbackCoverLetter(
 	groupId: number,
-	selfKeywords: string[],
+	body: CreateFeedbackAnalysisRequest,
 ) {
-	validateFeedbackCoverLetterRequest(groupId, selfKeywords);
+	validateFeedbackCoverLetterRequest(groupId, body);
 
 	const response = await apiClient.post<
 		ApiResponse<FeedbackCoverLetterCreateResult>
 	>(`/feedback-groups/${groupId}/cover-letters`, {
-		body: { selfKeywords },
+		body,
 	});
 
 	return unwrapApiData(response, ["200", "201"]);
@@ -146,13 +146,11 @@ function validateFeedbackAnalysisRequest(
 
 function validateFeedbackCoverLetterRequest(
 	groupId: number,
-	selfKeywords: string[],
+	body: CreateFeedbackAnalysisRequest,
 ) {
-	if (!Number.isInteger(groupId) || groupId <= 0) {
-		throw new ApiError(400, null, "유효한 피드백 그룹 ID가 필요합니다.");
-	}
+	validateFeedbackAnalysisRequest(groupId, body);
 
-	if (selfKeywords.length === 0) {
+	if (!body.selfKeywords?.length) {
 		throw new ApiError(400, null, "자기 인식 키워드를 선택해주세요.");
 	}
 }

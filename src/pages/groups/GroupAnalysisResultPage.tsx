@@ -74,6 +74,9 @@ export function GroupAnalysisResultPage() {
 							<ResultCard
 								label="AI 자기소개서 ID"
 								value={String(resultState.coverLetter.id)}
+								onClick={() =>
+									navigate(`/cover-letters/${resultState.coverLetter.id}`)
+								}
 							/>
 							<ResultCard
 								label="자기소개서 생성 상태"
@@ -86,10 +89,14 @@ export function GroupAnalysisResultPage() {
 				<div className="mt-10 flex flex-col gap-3">
 					<button
 						type="button"
-						onClick={() => navigate(-1)}
+						onClick={() =>
+							isSuccess
+								? navigate(`/cover-letters/${resultState.coverLetter.id}`)
+								: navigate(-1)
+						}
 						className="h-[52px] rounded-[16px] border-none bg-[#0073FF] text-[16px] font-semibold text-white"
 					>
-						이전으로 돌아가기
+						{isSuccess ? "자기소개서 보러가기" : "이전으로 돌아가기"}
 					</button>
 					<button
 						type="button"
@@ -104,11 +111,25 @@ export function GroupAnalysisResultPage() {
 	);
 }
 
-function ResultCard({ label, value }: { label: string; value: string }) {
+function ResultCard({
+	label,
+	value,
+	onClick,
+}: {
+	label: string;
+	value: string;
+	onClick?: () => void;
+}) {
+	const Element = onClick ? "button" : "div";
+
 	return (
-		<div className="flex items-center justify-between rounded-[20px] bg-white px-5 py-4 text-left">
+		<Element
+			type={onClick ? "button" : undefined}
+			onClick={onClick}
+			className="flex w-full items-center justify-between rounded-[20px] border-none bg-white px-5 py-4 text-left"
+		>
 			<span className="text-[14px] font-medium text-[#71717A]">{label}</span>
 			<span className="text-[16px] font-bold text-black">{value}</span>
-		</div>
+		</Element>
 	);
 }

@@ -1,14 +1,15 @@
 import type { ReactNode } from "react";
 import { Navigate, Outlet, Route, Routes } from "react-router";
 import { useCurrentUser } from "@/features/auth/hooks";
+import { AnalysisDetailPage } from "@/pages/analysis/AnalysisDetailPage";
+import { AnalysisHistoryPage } from "@/pages/analysis/AnalysisHistoryPage";
 import { AuthCallbackPage } from "@/pages/auth/AuthCallbackPage";
 import { AuthSuccessPage } from "@/pages/auth/AuthSuccessPage";
 import { ForbiddenPage } from "@/pages/auth/ForbiddenPage";
+import { CoverLetterDetailPage } from "@/pages/cover-letter-detail/CoverLetterDetailPage";
 import { FeedbackPage } from "@/pages/feedback/FeedbackPage";
 import { FeedbackDetailPage } from "@/pages/feedback-detail/FeedbackDetailPage";
 import { FeedbackGroupCreatePage } from "@/pages/feedback-group/FeedbackGroupCreatePage";
-import { AnalysisDetailPage } from "@/pages/analysis/AnalysisDetailPage";
-import { AnalysisHistoryPage } from "@/pages/analysis/AnalysisHistoryPage";
 import { GroupAnalysisPage } from "@/pages/groups/GroupAnalysisPage";
 import { GroupAnalysisResultPage } from "@/pages/groups/GroupAnalysisResultPage";
 import { GroupDetailPage } from "@/pages/groups/GroupDetailPage";
@@ -38,7 +39,14 @@ export function AppRoutes() {
 						element={<FeedbackDetailPage />}
 					/>
 					<Route path="/analysis" element={<AnalysisHistoryPage />} />
-					<Route path="/analysis/ai/:analysisId" element={<AnalysisDetailPage />} />
+					<Route
+						path="/analysis/ai/:analysisId"
+						element={<AnalysisDetailPage />}
+					/>
+					<Route
+						path="/cover-letters/:coverLetterId"
+						element={<CoverLetterDetailPage />}
+					/>
 					<Route path="/groups" element={<GroupsPage />} />
 					<Route path="/groups/:groupId" element={<GroupDetailPage />} />
 					<Route

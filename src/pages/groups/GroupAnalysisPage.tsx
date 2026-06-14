@@ -90,12 +90,13 @@ export function GroupAnalysisPage() {
 		mutationFn: async () => {
 			const answerIds = Array.from(selectedIds);
 			const selfKeywords = getOrderedSelfKeywords(selectedSelfKeywords);
+			const requestBody = {
+				answerIds,
+				selfKeywords,
+			};
 			const [analysisResult, coverLetterResult] = await Promise.allSettled([
-				createFeedbackAnalysis(id, {
-					answerIds,
-					selfKeywords,
-				}),
-				createFeedbackCoverLetter(id, selfKeywords),
+				createFeedbackAnalysis(id, requestBody),
+				createFeedbackCoverLetter(id, requestBody),
 			]);
 
 			if (
