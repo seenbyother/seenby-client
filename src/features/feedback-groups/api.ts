@@ -1,11 +1,9 @@
-import { ApiError, apiClient } from "@/shared/api";
-
-type ApiResponse<TData> = {
-	statuscode?: string;
-	statusCode?: string;
-	message?: string;
-	data?: TData | null;
-};
+import {
+	ApiError,
+	type ApiResponse,
+	apiClient,
+	unwrapApiData,
+} from "@/shared/api";
 
 export type FeedbackGroup = {
 	id: number;
@@ -46,36 +44,6 @@ export type FeedbackGroupDetail = {
 	updatedAt: string;
 };
 
-function unwrapApiData<TData>(response: ApiResponse<TData> | TData) {
-	if (!isApiResponse(response)) {
-		return response;
-	}
-
-	const statusCode = response.statusCode ?? response.statuscode;
-
-	if (statusCode && statusCode !== "200" && statusCode !== "201") {
-		throw new ApiError(Number(statusCode) || 400, response, response.message);
-	}
-
-	if (response.data === null || response.data === undefined) {
-		throw new ApiError(400, response, response.message);
-	}
-
-	return response.data;
-}
-
-function isApiResponse<TData>(
-	response: ApiResponse<TData> | TData,
-): response is ApiResponse<TData> {
-	if (!response || typeof response !== "object") {
-		return false;
-	}
-
-	return (
-		"data" in response || "statusCode" in response || "statuscode" in response
-	);
-}
-
 export async function getFeedbackGroups() {
 	const response = await apiClient.get<
 		ApiResponse<FeedbackGroupsResponse> | FeedbackGroupsResponse
@@ -103,7 +71,7 @@ export async function createFeedbackGroup(body: CreateFeedbackGroupRequest) {
 		ApiResponse<FeedbackGroup> | FeedbackGroup
 	>("/feedback-groups", { body });
 
-	return unwrapApiData(response);
+	return unwrapApiData(response, ["200", "201"]);
 }
 
 export async function updateFeedbackGroupLinkActive(
@@ -141,7 +109,7 @@ export async function createFeedbackAnalysis(
 		ApiResponse<FeedbackAnalysisCreateResult>
 	>(`/feedback-groups/${groupId}/analysis`, { body });
 
-	return unwrapApiData(response);
+	return unwrapApiData(response, ["200", "201"]);
 }
 
 export async function createFeedbackCoverLetter(
@@ -156,7 +124,7 @@ export async function createFeedbackCoverLetter(
 		body: { selfKeywords },
 	});
 
-	return unwrapApiData(response);
+	return unwrapApiData(response, ["200", "201"]);
 }
 
 function validateFeedbackAnalysisRequest(
@@ -195,10 +163,13 @@ export type PublicFeedbackGroup = {
 };
 
 export async function getPublicFeedbackGroup(linkToken: string) {
-	return apiClient.get<PublicFeedbackGroup>(`/feedback-groups/link/${linkToken}`, {
-		skipAuthRefresh: true,
-		credentials: "omit",
-	});
+	return apiClient.get<PublicFeedbackGroup>(
+		`/feedback-groups/link/${linkToken}`,
+		{
+			skipAuthRefresh: true,
+			credentials: "omit",
+		},
+	);
 }
 
 type ExperienceFeedback = {
@@ -222,10 +193,16 @@ type SubmitFeedbackAnswerResponse = {
 	createdAt: string;
 };
 
-export async function submitPublicFeedbackAnswer(linkToken: string, body: SubmitFeedbackAnswerRequest) {
-	return apiClient.post<SubmitFeedbackAnswerResponse>(`/feedback-groups/link/${linkToken}/answers`, {
-		body,
-		skipAuthRefresh: true,
-		credentials: "omit",
-	});
+export async function submitPublicFeedbackAnswer(
+	linkToken: string,
+	body: SubmitFeedbackAnswerRequest,
+) {
+	return apiClient.post<SubmitFeedbackAnswerResponse>(
+		`/feedback-groups/link/${linkToken}/answers`,
+		{
+			body,
+			skipAuthRefresh: true,
+			credentials: "omit",
+		},
+	);
 }
