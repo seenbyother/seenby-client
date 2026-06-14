@@ -69,7 +69,7 @@ export function HomePage() {
 
 						<HomeActionCard
 							onCreateFeedbackGroup={() => navigate("/feedback-group/create")}
-							onCheckIntro={() => undefined}
+							onCheckIntro={() => navigate("/analysis?tab=cover-letter")}
 						/>
 
 						<PerspectiveCard
