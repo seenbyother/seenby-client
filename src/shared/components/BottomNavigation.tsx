@@ -87,6 +87,10 @@ export function BottomNavigation({
 			navigateAfterIndicatorMoves("/home");
 		}
 
+		if (tab === "report") {
+			navigateAfterIndicatorMoves("/analysis");
+		}
+
 		if (tab === "feedback") {
 			navigateAfterIndicatorMoves("/groups");
 		}

@@ -189,6 +189,69 @@ function validateFeedbackCoverLetterRequest(
 	}
 }
 
+export type AnalysisHistoryItem = {
+	analysisId: number;
+	group: {
+		id: number;
+		title: string;
+	};
+	status: "PROCESSING" | "COMPLETED";
+	analyzedAt: string | null;
+	createdAt: string;
+};
+
+export type AnalysisHistoryResponse = {
+	analyses: AnalysisHistoryItem[];
+};
+
+export async function getAnalysisHistory() {
+	const response = await apiClient.get<
+		ApiResponse<AnalysisHistoryResponse> | AnalysisHistoryResponse
+	>("/feedback-groups/analysis");
+
+	return unwrapApiData(response);
+}
+
+export type AnalysisKeyword = {
+	rank: number;
+	keyword: string;
+	count: number;
+};
+
+export type AnalysisSelfOtherRow = {
+	label: string;
+	selfView: string[];
+	otherView: string[];
+};
+
+export type AnalysisDetail = {
+	id: number;
+	status: string;
+	group: {
+		id: number;
+		selfIntroductionId: number | null;
+		name: string;
+	};
+	analyzedAt: string;
+	feedbackSummary: string;
+	topKeywords: AnalysisKeyword[] | null;
+	insight: string;
+	selfAwareness: number;
+	selfOtherComparison: {
+		rows: AnalysisSelfOtherRow[];
+	} | null;
+	actionPlan: string | null;
+	totalSummary: string;
+};
+
+export async function getAnalysisDetail(analysisId: number) {
+	const response = await apiClient.get<
+		ApiResponse<AnalysisDetail> | AnalysisDetail
+	>(`/feedback-groups/analysis/${analysisId}`);
+
+	return unwrapApiData(response);
+}
+
 export type PublicFeedbackGroup = {
 	name: string;
 	ownerName: string;
