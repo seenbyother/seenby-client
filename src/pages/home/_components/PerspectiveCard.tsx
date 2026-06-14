@@ -1,66 +1,112 @@
-const othersWords = [
-	{ label: "계획적", className: "left-0 top-[2px] text-[20px]" },
-	{ label: "분석적", className: "left-[71px] top-[5px] text-[16px]" },
-	{ label: "긍정적", className: "left-[53px] top-[36px] text-[30px]" },
-	{ label: "말이 많다", className: "left-2 top-[45px] text-[10px]" },
-];
+import type { CSSProperties } from "react";
+import type { HomeSelfKeyword, RankedHomeKeyword } from "@/features/home/api";
+import { AnalysisHint } from "./InsightCard";
 
-const selfWords = [
-	{ label: "게으름", className: "left-0 top-[2px] text-[20px]" },
-	{ label: "긍정적", className: "left-[71px] top-[5px] text-[16px]" },
-	{ label: "급하다", className: "left-[28px] top-[35px] text-[30px]" },
-];
+const WORD_SLOTS_BY_COUNT: Record<number, readonly CloudWordSlot[]> = {
+	1: ["heroClose"],
+	2: ["heroClose", "upperClose"],
+	3: ["hero", "topLeft", "topRight"],
+	4: ["hero", "topLeft", "topRight", "bottomLeft"],
+};
 
-export function PerspectiveCard() {
+export function PerspectiveCard({
+	otherKeywords,
+	selfKeywords,
+}: PerspectiveCardProps) {
+	const hasOtherKeywords = otherKeywords.length > 0;
+	const otherWords = [...otherKeywords]
+		.sort((a, b) => a.rank - b.rank)
+		.slice(0, 4)
+		.map(({ keyword }, index, keywords) => ({
+			id: `other-${index}-${keyword}`,
+			label: keyword,
+			slot: getCloudWordSlot(index, keywords.length),
+		}));
+	const selfWords = selfKeywords
+		.slice(0, 3)
+		.map(({ keyword }, index, keywords) => ({
+			id: `self-${index}-${keyword}`,
+			label: keyword,
+			slot: getCloudWordSlot(index, keywords.length),
+		}));
+
 	return (
-		<div className="rounded-2xl bg-white px-4 py-5">
-			<h3 className="m-0 text-[20px] font-semibold leading-normal">
-				서로의 시선은 이렇게 달라요
-			</h3>
+		<div className="flex flex-col gap-3">
+			<div className="rounded-2xl bg-white px-4 py-5">
+				<h3 className="m-0 text-[20px] font-semibold leading-normal">
+					서로의 시선은 이렇게 달라요
+				</h3>
 
-			<div className="mt-4 grid grid-cols-[1fr_33px_1fr] items-center gap-3">
-				<PerspectiveColumn
-					badge="타인이 경험한 나"
-					badgeClassName="bg-[rgba(0,115,255,0.11)] text-[#0073FF]"
-					arrowClassName="bg-[#E1F0FF]"
-					words={othersWords}
-				/>
-				<div className="relative flex h-[145px] items-center justify-center">
-					<div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-[#EFEFEF]" />
-					<div className="relative z-10 flex h-[33px] w-[33px] items-center justify-center rounded-full bg-white text-[12px] font-bold text-[#616161] shadow-[0_0_2px_rgba(0,0,0,0.12)]">
-						VS
+				<div className="mt-3 grid grid-cols-[minmax(0,1fr)_33px_minmax(0,1fr)] items-center gap-3">
+					<PerspectiveColumn
+						badge="타인이 경험한 나"
+						badgeClassName="bg-[rgba(0,115,255,0.11)] text-[#0073FF]"
+						arrowClassName="bg-[#E1F0FF]"
+						emptyText="???"
+						side="left"
+						words={otherWords}
+					/>
+					<div className="relative flex h-[128px] items-center justify-center">
+						<div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-[#EFEFEF]" />
+						<div className="relative z-10 flex h-[33px] w-[33px] items-center justify-center rounded-full bg-white text-[12px] font-bold text-[#616161] shadow-[0_0_2px_rgba(0,0,0,0.12)]">
+							VS
+						</div>
 					</div>
+					<PerspectiveColumn
+						badge="내가 생각하는 나"
+						badgeClassName="bg-black/10 text-black/70"
+						arrowClassName="bg-[#E5E5E5]"
+						emptyText="선택 전"
+						side="right"
+						words={selfWords}
+					/>
 				</div>
-				<PerspectiveColumn
-					badge="내가 생각하는 나"
-					badgeClassName="bg-black/10 text-black/70"
-					arrowClassName="bg-[#E5E5E5]"
-					words={selfWords}
-				/>
 			</div>
+			{!hasOtherKeywords ? <AnalysisHint /> : null}
 		</div>
 	);
+}
+
+function getCloudWordSlot(index: number, count: number) {
+	const slots =
+		WORD_SLOTS_BY_COUNT[count] ??
+		WORD_SLOTS_BY_COUNT[4] ??
+		WORD_SLOTS_BY_COUNT[3] ??
+		WORD_SLOTS_BY_COUNT[2] ??
+		WORD_SLOTS_BY_COUNT[1] ??
+		(["heroClose"] as const);
+
+	return slots[index] ?? "heroClose";
+}
+
+interface PerspectiveCardProps {
+	otherKeywords: RankedHomeKeyword[];
+	selfKeywords: HomeSelfKeyword[];
 }
 
 interface PerspectiveColumnProps {
 	badge: string;
 	badgeClassName: string;
 	arrowClassName: string;
-	words: { label: string; className: string }[];
+	emptyText: string;
+	side: CloudSide;
+	words: CloudWord[];
 }
 
 function PerspectiveColumn({
 	badge,
 	badgeClassName,
 	arrowClassName,
+	emptyText,
+	side,
 	words,
 }: PerspectiveColumnProps) {
 	return (
-		<div className="flex min-w-0 flex-col items-center gap-5">
-			<div className="relative h-[30px] w-[104px]">
+		<div className="flex min-w-0 flex-col items-center gap-3">
+			<div className="relative h-[30px] w-full max-w-[124px]">
 				<div
 					className={[
-						"flex h-[25px] items-center justify-center rounded-2xl px-[10px] py-[5px] text-[12px] font-semibold leading-none",
+						"flex h-[25px] items-center justify-center truncate rounded-2xl px-[10px] py-[5px] text-[12px] font-semibold leading-none",
 						badgeClassName,
 					].join(" ")}
 				>
@@ -73,16 +119,223 @@ function PerspectiveColumn({
 					].join(" ")}
 				/>
 			</div>
-			<div className="relative h-[68px] w-[136px] text-black/80">
-				{words.map((word) => (
-					<span
-						key={word.label}
-						className={`absolute whitespace-nowrap leading-none ${word.className}`}
-					>
-						{word.label}
+			<div className="relative h-[92px] w-full min-w-0 max-w-[136px] overflow-hidden text-[#3A3A3A]">
+				{words.length > 0 ? (
+					<WordCloud side={side} words={words} />
+				) : (
+					<span className="absolute left-1/2 top-1/2 whitespace-nowrap text-[14px] font-semibold text-black/30 [transform:translate(-50%,-50%)]">
+						{emptyText}
 					</span>
-				))}
+				)}
 			</div>
 		</div>
 	);
+}
+
+type CloudWord = {
+	id: string;
+	label: string;
+	slot: CloudWordSlot;
+};
+
+type CloudSide = "left" | "right";
+
+type CloudWordSlot =
+	| "bottomLeft"
+	| "hero"
+	| "heroClose"
+	| "topLeft"
+	| "topRight"
+	| "upperClose";
+
+function WordCloud({ side, words }: { side: CloudSide; words: CloudWord[] }) {
+	return (
+		<>
+			{words.map((word) => (
+				<span
+					key={word.id}
+					className={[
+						"absolute inline-block max-w-full whitespace-nowrap leading-none tracking-normal",
+						getCloudWordClassName(word),
+					].join(" ")}
+					style={getCloudWordStyle(word, side)}
+				>
+					{word.label}
+				</span>
+			))}
+		</>
+	);
+}
+
+function getCloudWordClassName({ slot }: CloudWord) {
+	return isHeroSlot(slot)
+		? "font-normal text-[#333333]"
+		: "font-normal text-[#3A3A3A]";
+}
+
+function getCloudWordStyle(word: CloudWord, side: CloudSide): CSSProperties {
+	return {
+		fontSize: getCloudWordFontSize(word),
+		...getCloudWordPosition(word, side),
+	};
+}
+
+function getCloudWordPosition(
+	{ label, slot }: CloudWord,
+	side: CloudSide,
+): Pick<CSSProperties, "left" | "top"> {
+	if (slot === "upperClose") {
+		return {
+			left: side === "left" ? "7px" : getUpperCloseRightLeft(label),
+			top: side === "left" ? "19px" : "15px",
+		};
+	}
+
+	if (slot === "heroClose") {
+		return {
+			left: getHeroWordLeft(label, side),
+			top: side === "left" ? "45px" : "43px",
+		};
+	}
+
+	if (slot === "topLeft") {
+		return {
+			left: side === "left" ? "5px" : "10px",
+			top: side === "left" ? "8px" : "4px",
+		};
+	}
+
+	if (slot === "topRight") {
+		return {
+			left:
+				side === "left" ? getTopRightLeft(label) : getTopRightRightLeft(label),
+			top: side === "left" ? "32px" : "34px",
+		};
+	}
+
+	if (slot === "hero") {
+		return {
+			left: getHeroWordLeft(label, side),
+			top: side === "left" ? "57px" : "59px",
+		};
+	}
+
+	return {
+		left: side === "left" ? "14px" : "20px",
+		top: side === "left" ? "70px" : "67px",
+	};
+}
+
+function getHeroWordLeft(label: string, side: CloudSide) {
+	if (label.length >= 7) {
+		return side === "left" ? "3px" : "6px";
+	}
+
+	if (label.length >= 6) {
+		return side === "left" ? "8px" : "8px";
+	}
+
+	if (label.length >= 5) {
+		return side === "left" ? "14px" : "12px";
+	}
+
+	return side === "left" ? "30px" : "22px";
+}
+
+function getUpperCloseRightLeft(label: string) {
+	if (label.length >= 7) {
+		return "30px";
+	}
+
+	if (label.length >= 5) {
+		return "38px";
+	}
+
+	return "58px";
+}
+
+function getTopRightLeft(label: string) {
+	if (label.length >= 7) {
+		return "28px";
+	}
+
+	if (label.length >= 5) {
+		return "48px";
+	}
+
+	return "72px";
+}
+
+function getTopRightRightLeft(label: string) {
+	if (label.length >= 7) {
+		return "38px";
+	}
+
+	if (label.length >= 5) {
+		return "58px";
+	}
+
+	return "82px";
+}
+
+function getCloudWordFontSize({ label, slot }: CloudWord) {
+	const lengthSafeMaxSize = Math.floor(126 / Math.max(label.length, 1));
+
+	if (isHeroSlot(slot)) {
+		const baseSize = getHeroWordBaseFontSize(label);
+
+		return `${Math.max(12, Math.min(baseSize, lengthSafeMaxSize))}px`;
+	}
+
+	const baseSize = getSecondaryWordBaseFontSize(label, slot);
+
+	return `${Math.max(10, Math.min(baseSize, lengthSafeMaxSize))}px`;
+}
+
+function getHeroWordBaseFontSize(label: string) {
+	if (label.length >= 7) {
+		return 18;
+	}
+
+	if (label.length >= 6) {
+		return 18;
+	}
+
+	if (label.length >= 5) {
+		return 20;
+	}
+
+	if (label.length >= 4) {
+		return 24;
+	}
+
+	return 30;
+}
+
+function getSecondaryWordBaseFontSize(label: string, slot: CloudWord["slot"]) {
+	if (slot === "bottomLeft") {
+		if (label.length >= 7) {
+			return 11;
+		}
+
+		return label.length >= 5 ? 12 : 14;
+	}
+
+	if (label.length >= 8) {
+		return 12;
+	}
+
+	if (label.length >= 5) {
+		return 14;
+	}
+
+	if (label.length >= 4) {
+		return 15;
+	}
+
+	return 20;
+}
+
+function isHeroSlot(slot: CloudWord["slot"]) {
+	return slot === "hero" || slot === "heroClose";
 }
