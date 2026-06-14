@@ -7,6 +7,8 @@ import { ForbiddenPage } from "@/pages/auth/ForbiddenPage";
 import { FeedbackPage } from "@/pages/feedback/FeedbackPage";
 import { FeedbackDetailPage } from "@/pages/feedback-detail/FeedbackDetailPage";
 import { FeedbackGroupCreatePage } from "@/pages/feedback-group/FeedbackGroupCreatePage";
+import { AnalysisDetailPage } from "@/pages/analysis/AnalysisDetailPage";
+import { AnalysisHistoryPage } from "@/pages/analysis/AnalysisHistoryPage";
 import { GroupAnalysisPage } from "@/pages/groups/GroupAnalysisPage";
 import { GroupAnalysisResultPage } from "@/pages/groups/GroupAnalysisResultPage";
 import { GroupDetailPage } from "@/pages/groups/GroupDetailPage";
@@ -35,6 +37,8 @@ export function AppRoutes() {
 						path="/feedback/detail/:answerId"
 						element={<FeedbackDetailPage />}
 					/>
+					<Route path="/analysis" element={<AnalysisHistoryPage />} />
+					<Route path="/analysis/ai/:analysisId" element={<AnalysisDetailPage />} />
 					<Route path="/groups" element={<GroupsPage />} />
 					<Route path="/groups/:groupId" element={<GroupDetailPage />} />
 					<Route
