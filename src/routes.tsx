@@ -8,6 +8,7 @@ import { FeedbackPage } from "@/pages/feedback/FeedbackPage";
 import { FeedbackDetailPage } from "@/pages/feedback-detail/FeedbackDetailPage";
 import { FeedbackGroupCreatePage } from "@/pages/feedback-group/FeedbackGroupCreatePage";
 import { GroupAnalysisPage } from "@/pages/groups/GroupAnalysisPage";
+import { GroupAnalysisResultPage } from "@/pages/groups/GroupAnalysisResultPage";
 import { GroupDetailPage } from "@/pages/groups/GroupDetailPage";
 import { GroupsPage } from "@/pages/groups/GroupsPage";
 import { HomePage } from "@/pages/home/HomePage";
@@ -37,6 +38,10 @@ export function AppRoutes() {
 					<Route
 						path="/groups/:groupId/analysis"
 						element={<GroupAnalysisPage />}
+					/>
+					<Route
+						path="/groups/:groupId/analysis/result"
+						element={<GroupAnalysisResultPage />}
 					/>
 					<Route
 						path="/feedback-group/create"
