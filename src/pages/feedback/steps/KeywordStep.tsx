@@ -1,0 +1,75 @@
+import { useState } from "react";
+import { Button, Header, KeywordChip, ProgressBar } from "@/shared/components";
+import { KEYWORD_ROUNDS } from "../constants";
+
+interface KeywordStepProps {
+	recipientName: string;
+	selectedKeywords: string[];
+	onToggle: (keyword: string) => void;
+	onBack: () => void;
+	onNext: () => void;
+}
+
+export function KeywordStep({ recipientName, selectedKeywords, onToggle, onBack, onNext }: KeywordStepProps) {
+	const [roundIndex, setRoundIndex] = useState(0);
+	const round = KEYWORD_ROUNDS[roundIndex];
+
+	const currentRoundSelected = round.keywords.filter((k) => selectedKeywords.includes(k));
+	const hasSelection = currentRoundSelected.length >= 1;
+	const isRoundAtMax = currentRoundSelected.length >= 5;
+
+	const handleToggle = (keyword: string) => {
+		const isSelected = selectedKeywords.includes(keyword);
+		if (!isSelected && isRoundAtMax) return;
+		onToggle(keyword);
+	};
+
+	const handleNext = () => {
+		if (roundIndex < KEYWORD_ROUNDS.length - 1) {
+			setRoundIndex((i) => i + 1);
+		} else {
+			onNext();
+		}
+	};
+
+	const handleBack = () => {
+		if (roundIndex > 0) {
+			setRoundIndex((i) => i - 1);
+		} else {
+			onBack();
+		}
+	};
+
+	return (
+		<div className="min-h-screen flex flex-col bg-white text-left">
+			<Header onBack={handleBack} />
+			<div className="px-5">
+				<ProgressBar step={roundIndex + 2} totalSteps={6} />
+			</div>
+
+			<div className="px-5 pt-[42px] flex-1 overflow-y-auto">
+				<div className="flex flex-col gap-2">
+					<p className="text-[28px] font-semibold leading-[160%] tracking-[-0.02em] text-black m-0 whitespace-pre-line">
+						{round.title(recipientName)}
+					</p>
+					<p className="text-[16px] font-medium leading-[150%] text-[#71717A] m-0 whitespace-pre-line">{round.subtitle}</p>
+				</div>
+
+				<div className="mt-6 flex flex-wrap gap-x-4 gap-y-2 pb-4">
+					{round.keywords.map((keyword) => (
+						<KeywordChip
+							key={keyword}
+							label={keyword}
+							selected={selectedKeywords.includes(keyword)}
+							onClick={() => handleToggle(keyword)}
+						/>
+					))}
+				</div>
+			</div>
+
+			<div className="px-5 pb-8">
+				<Button onClick={handleNext} disabled={!hasSelection}>다음</Button>
+			</div>
+		</div>
+	);
+}

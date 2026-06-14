@@ -15,8 +15,10 @@ Seenby는 타인의 경험을 통해 나에 대한 새로운 인사이트를 제
 
 ```bash
 npm install
+cp .env.example .env
 npm run dev
 ```
+
 
 ## Scripts
 
