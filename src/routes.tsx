@@ -13,6 +13,7 @@ import { GroupDetailPage } from "@/pages/groups/GroupDetailPage";
 import { GroupsPage } from "@/pages/groups/GroupsPage";
 import { HomePage } from "@/pages/home/HomePage";
 import LoginPage from "@/pages/login/LoginPage";
+import { OnboardingPage } from "@/pages/onboarding/OnboardingPage";
 
 export function AppRoutes() {
 	return (
@@ -29,6 +30,7 @@ export function AppRoutes() {
 				<Route element={<ProtectedRoute />}>
 					<Route index element={<HomePage />} />
 					<Route path="/home" element={<HomePage />} />
+					<Route path="/onboarding" element={<OnboardingPage />} />
 					<Route
 						path="/feedback/detail/:answerId"
 						element={<FeedbackDetailPage />}

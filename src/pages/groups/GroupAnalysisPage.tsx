@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router";
+import { getCurrentUserName, useCurrentUser } from "@/features/auth/hooks";
 import {
 	createFeedbackAnalysis,
 	createFeedbackCoverLetter,
@@ -8,95 +9,22 @@ import {
 	type FeedbackCoverLetterCreateResult,
 	getFeedbackGroupDetail,
 } from "@/features/feedback-groups/api";
+import { getSelfKeywords } from "@/features/onboarding/api";
+import {
+	countSelfKeywordsInCategory,
+	getDisplayableSelfKeywords,
+	getOrderedSelfKeywords,
+	MAX_SELF_KEYWORD_COUNT_BY_CATEGORY,
+	SELF_KEYWORD_CATEGORIES,
+	SELF_KEYWORD_CATEGORY_BY_KEYWORD,
+	type SelfKeywordCategory,
+	type SelfKeywordCategoryId,
+} from "@/features/onboarding/selfKeywords";
 import { Header } from "@/shared/components";
 import { FloatingActionButton } from "./_components/FloatingActionButton";
 import { getErrorMessage } from "./utils";
 
 type Step = "selectFeedback" | "selectSelfKeywords";
-type SelfKeywordCategoryId = "mood" | "relationship" | "tendency";
-
-type SelfKeywordCategory = {
-	id: SelfKeywordCategoryId;
-	title: string;
-	description: string;
-	keywords: string[];
-};
-
-const SELF_KEYWORD_CATEGORIES: SelfKeywordCategory[] = [
-	{
-		id: "mood",
-		title: "분위기",
-		description: "평소 나의 첫인상이나 분위기에 가까운 단어를 골라주세요",
-		keywords: [
-			"유쾌한",
-			"차분한",
-			"활동적인",
-			"행복한",
-			"따뜻한",
-			"친절한",
-			"상냥한",
-			"외향적인",
-			"내향적인",
-			"내성적인",
-			"수줍어하는",
-			"똑똑한",
-			"품위있는",
-			"강한 인상",
-			"낙천적인",
-			"긴장한",
-			"감정적인",
-			"관대한",
-		],
-	},
-	{
-		id: "relationship",
-		title: "관계",
-		description: "성격이나 사람을 대하는 모습과 가까운 단어를 골라주세요",
-		keywords: [
-			"믿음직한",
-			"도움이 되는",
-			"철저한",
-			"마음이 넓은",
-			"동정심 있는",
-			"솔직한",
-			"조심성 있는",
-			"융통성 있는",
-			"성숙한",
-			"자기 주장이 강한",
-			"참을성 있는",
-			"논리적인",
-			"실용적인",
-			"겸손한",
-			"독립적인",
-			"민감한",
-			"자발적인",
-			"생각이 깊은",
-		],
-	},
-	{
-		id: "tendency",
-		title: "성향",
-		description: "성격이나 가치관에 가까운 단어를 골라주세요",
-		keywords: [
-			"재능있는",
-			"영리한",
-			"독창적인",
-			"재치있는",
-			"총명한",
-			"박식한",
-			"지혜가 있는",
-			"용기있는",
-			"적극적인",
-			"자신감 있는",
-			"이상주의적인",
-			"엄격한",
-			"양향적인",
-			"자의식이 강한",
-			"까다로운",
-			"어리숙함",
-		],
-	},
-];
 
 const MIN_ANALYSIS_FEEDBACK_COUNT = 3;
 
@@ -118,9 +46,13 @@ export function GroupAnalysisPage() {
 	const [selectedSelfKeywords, setSelectedSelfKeywords] = useState<Set<string>>(
 		() => new Set(),
 	);
+	const [hasLoadedSavedSelfKeywords, setHasLoadedSavedSelfKeywords] =
+		useState(false);
 
 	const id = Number(groupId);
 	const isValidGroupId = Number.isInteger(id) && id > 0;
+	const { data: currentUser } = useCurrentUser();
+	const userName = getCurrentUserName(currentUser);
 
 	const {
 		data: group,
@@ -132,6 +64,15 @@ export function GroupAnalysisPage() {
 		queryKey: ["feedback-group", id],
 		queryFn: () => getFeedbackGroupDetail(id),
 		enabled: isValidGroupId,
+	});
+	const {
+		data: savedSelfKeywords,
+		error: savedSelfKeywordsError,
+		isLoading: isSavedSelfKeywordsLoading,
+	} = useQuery({
+		queryKey: ["me", "self-keywords"],
+		queryFn: getSelfKeywords,
+		enabled: step === "selectSelfKeywords",
 	});
 
 	const feedbacks = useMemo(
@@ -148,7 +89,7 @@ export function GroupAnalysisPage() {
 	>({
 		mutationFn: async () => {
 			const answerIds = Array.from(selectedIds);
-			const selfKeywords = Array.from(selectedSelfKeywords);
+			const selfKeywords = getOrderedSelfKeywords(selectedSelfKeywords);
 			const [analysisResult, coverLetterResult] = await Promise.allSettled([
 				createFeedbackAnalysis(id, {
 					answerIds,
@@ -195,6 +136,31 @@ export function GroupAnalysisPage() {
 		setSelectedIds(new Set(feedbacks.map((feedback) => feedback.id)));
 	}, [feedbacks]);
 
+	useEffect(() => {
+		if (
+			step !== "selectSelfKeywords" ||
+			!savedSelfKeywords ||
+			hasLoadedSavedSelfKeywords
+		) {
+			return;
+		}
+
+		if (selectedSelfKeywords.size > 0) {
+			setHasLoadedSavedSelfKeywords(true);
+			return;
+		}
+
+		setSelectedSelfKeywords(
+			new Set(getDisplayableSelfKeywords(savedSelfKeywords)),
+		);
+		setHasLoadedSavedSelfKeywords(true);
+	}, [
+		hasLoadedSavedSelfKeywords,
+		savedSelfKeywords,
+		selectedSelfKeywords.size,
+		step,
+	]);
+
 	const allSelected =
 		feedbacks.length > 0 && selectedIds.size === feedbacks.length;
 	const canGoToSelfKeywordStep =
@@ -218,8 +184,24 @@ export function GroupAnalysisPage() {
 	const toggleSelfKeyword = (keyword: string) => {
 		setSelectedSelfKeywords((prev) => {
 			const next = new Set(prev);
-			if (next.has(keyword)) next.delete(keyword);
-			else next.add(keyword);
+			if (next.has(keyword)) {
+				next.delete(keyword);
+				return next;
+			}
+
+			const categoryId = SELF_KEYWORD_CATEGORY_BY_KEYWORD.get(keyword);
+			const selectedCountInCategory = categoryId
+				? countSelfKeywordsInCategory(prev, categoryId)
+				: 0;
+
+			if (
+				categoryId &&
+				selectedCountInCategory >= MAX_SELF_KEYWORD_COUNT_BY_CATEGORY
+			) {
+				return prev;
+			}
+
+			next.add(keyword);
 			return next;
 		});
 	};
@@ -279,11 +261,11 @@ export function GroupAnalysisPage() {
 
 				<div className="flex-1 overflow-y-auto px-5 mt-4 pb-36">
 					<section>
-						<h2 className="m-0 text-[24px] font-semibold leading-[160%] tracking-[-0.48px] text-black">
-							ㅇㅇ님의 키워드를 선택해주세요
-						</h2>
-						<p className="mt-3 mb-0 text-[14px] font-medium leading-[150%] text-[#71717A]">
-							{group.name}에서스스로 생각하는 ㅇㅇ님의 키워드를
+						<h1 className="m-0 text-[24px] font-bold leading-[160%] tracking-[-0.48px] text-black">
+							{userName}님의 키워드를 선택해주세요
+						</h1>
+						<p className="mt-3 mb-0 text-[16px] font-medium leading-[150%] text-[#71717A]">
+							{group.name}에서 스스로 생각하는 {userName}님의 키워드를
 							<br />
 							자유롭게 선택해주세요
 						</p>
@@ -296,6 +278,7 @@ export function GroupAnalysisPage() {
 								category={category}
 								isOpen={openCategoryId === category.id}
 								selectedKeywords={selectedSelfKeywords}
+								maxSelectedCount={MAX_SELF_KEYWORD_COUNT_BY_CATEGORY}
 								onToggleOpen={() => toggleKeywordCategory(category.id)}
 								onToggleKeyword={toggleSelfKeyword}
 							/>
@@ -306,12 +289,25 @@ export function GroupAnalysisPage() {
 				<FloatingActionButton
 					onClick={() => analysisMutation.mutate()}
 					disabled={
-						selectedSelfKeywords.size === 0 || analysisMutation.isPending
+						selectedSelfKeywords.size === 0 ||
+						analysisMutation.isPending ||
+						isSavedSelfKeywordsLoading
 					}
-					active={selectedSelfKeywords.size > 0 && !analysisMutation.isPending}
+					active={
+						selectedSelfKeywords.size > 0 &&
+						!analysisMutation.isPending &&
+						!isSavedSelfKeywordsLoading
+					}
 					className="min-w-[134px]"
 					topContent={
-						analysisMutation.isError ? (
+						savedSelfKeywordsError ? (
+							<p className="m-0 text-right text-[13px] font-medium text-red-500">
+								{getErrorMessage(
+									savedSelfKeywordsError,
+									"저장된 자기 인식 키워드를 불러오지 못했어요.",
+								)}
+							</p>
+						) : analysisMutation.isError ? (
 							<p className="m-0 text-right text-[13px] font-medium text-red-500">
 								{getErrorMessage(
 									analysisMutation.error,
@@ -322,7 +318,11 @@ export function GroupAnalysisPage() {
 					}
 				>
 					<span className="text-[16px] font-medium leading-none">
-						{analysisMutation.isPending ? "제출 중" : "제출 하기"}
+						{analysisMutation.isPending
+							? "제출 중"
+							: isSavedSelfKeywordsLoading
+								? "불러오는 중"
+								: "제출 하기"}
 					</span>
 					<span className="text-[24px] leading-none" aria-hidden="true">
 						→
@@ -340,9 +340,7 @@ export function GroupAnalysisPage() {
 				withBottomSpacing={false}
 			/>
 
-			{/* Content */}
 			<div className="flex flex-col gap-3 px-5 mt-4 pb-36">
-				{/* 전체 선택 */}
 				<button
 					type="button"
 					onClick={toggleAll}
@@ -383,7 +381,6 @@ export function GroupAnalysisPage() {
 				)}
 			</div>
 
-			{/* 제출 하기 FAB */}
 			<FloatingActionButton
 				onClick={goToSelfKeywordStep}
 				disabled={!canGoToSelfKeywordStep}
@@ -406,6 +403,7 @@ type SelfKeywordSectionProps = {
 	category: SelfKeywordCategory;
 	isOpen: boolean;
 	selectedKeywords: Set<string>;
+	maxSelectedCount: number;
 	onToggleOpen: () => void;
 	onToggleKeyword: (keyword: string) => void;
 };
@@ -414,9 +412,16 @@ function SelfKeywordSection({
 	category,
 	isOpen,
 	selectedKeywords,
+	maxSelectedCount,
 	onToggleOpen,
 	onToggleKeyword,
 }: SelfKeywordSectionProps) {
+	const selectedCount = countSelfKeywordsInCategory(
+		selectedKeywords,
+		category.id,
+	);
+	const isLimitReached = selectedCount >= maxSelectedCount;
+
 	return (
 		<section>
 			<button
@@ -434,7 +439,7 @@ function SelfKeywordSection({
 				>
 					⌃
 				</span>
-				<h2 className="m-0 text-[20px] font-medium leading-[150%] text-black">
+				<h2 className="m-0 text-[24px] font-medium leading-[150%] text-black">
 					{category.title}
 				</h2>
 			</button>
@@ -446,11 +451,17 @@ function SelfKeywordSection({
 							key={keyword}
 							label={keyword}
 							selected={selectedKeywords.has(keyword)}
+							disabled={!selectedKeywords.has(keyword) && isLimitReached}
 							onClick={() => onToggleKeyword(keyword)}
 						/>
 					))}
 				</div>
 			)}
+			{isOpen && isLimitReached ? (
+				<p className="mt-3 mb-0 text-[13px] font-medium leading-[150%] text-[#2F80FF]">
+					각 카테고리에서 최대 {maxSelectedCount}개까지 선택할 수 있어요
+				</p>
+			) : null}
 		</section>
 	);
 }
@@ -458,19 +469,26 @@ function SelfKeywordSection({
 type SelfKeywordChipProps = {
 	label: string;
 	selected: boolean;
+	disabled?: boolean;
 	onClick: () => void;
 };
 
-function SelfKeywordChip({ label, selected, onClick }: SelfKeywordChipProps) {
+function SelfKeywordChip({
+	label,
+	selected,
+	disabled = false,
+	onClick,
+}: SelfKeywordChipProps) {
 	return (
 		<button
 			type="button"
 			onClick={onClick}
+			disabled={disabled}
 			className={[
-				"min-h-[40px] rounded-full px-[14px] py-2 text-[16px] font-medium leading-[150%] transition-colors",
+				"min-h-[40px] rounded-full border px-[14px] py-2 text-[16px] font-medium leading-[150%] transition-colors disabled:cursor-not-allowed disabled:opacity-35",
 				selected
-					? "border border-[rgba(0,115,255,0.82)] bg-[rgba(0,115,255,0.82)] text-white"
-					: "border border-[#EDF0FF] bg-transparent text-black",
+					? "border-[#2F80FF] bg-[#2F80FF] text-white"
+					: "border-[#EDF0FF] bg-transparent text-black",
 			].join(" ")}
 		>
 			{label}
