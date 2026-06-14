@@ -3,15 +3,6 @@ import { ApiError } from "@/shared/api/errors";
 
 type ApiQueryValue = boolean | number | string | null | undefined;
 type ApiQuery = Record<string, ApiQueryValue | ApiQueryValue[]>;
-type ApiResponse<TData> = {
-	statuscode: string;
-	message: string;
-	data: TData | null;
-};
-type AuthTokenMetadata = {
-	tokenType: string;
-	expiresIn: number;
-};
 let refreshAccessTokenRequest: Promise<boolean> | null = null;
 
 type RequestOptions = Omit<RequestInit, "body" | "method"> & {
@@ -67,8 +58,11 @@ async function request<TResponse>(
 		query,
 		...init,
 	});
+	const responseBody = await parseResponse(response);
 	const shouldRefresh =
-		response.status === 401 && !skipAuthRefresh && !isAuthTokenPath(path);
+		isAuthFailureResponse(response, responseBody) &&
+		!skipAuthRefresh &&
+		!isAuthTokenPath(path);
 
 	if (shouldRefresh && (await refreshStoredAccessToken())) {
 		const retryResponse = await sendRequest(method, path, {
@@ -77,11 +71,16 @@ async function request<TResponse>(
 			query,
 			...init,
 		});
+		const retryResponseBody = await parseResponse(retryResponse);
 
-		return handleResponse<TResponse>(retryResponse);
+		return handleParsedResponse<TResponse>(
+			retryResponse,
+			retryResponseBody,
+			path,
+		);
 	}
 
-	return handleResponse<TResponse>(response);
+	return handleParsedResponse<TResponse>(response, responseBody, path);
 }
 
 async function sendRequest(
@@ -102,18 +101,154 @@ async function sendRequest(
 	});
 }
 
-async function handleResponse<TResponse>(response: Response) {
-	const responseBody = await parseResponse(response);
-
+function handleParsedResponse<TResponse>(
+	response: Response,
+	responseBody: unknown,
+	path: string,
+) {
 	if (!response.ok) {
-		throw new ApiError(response.status, responseBody);
+		redirectByAuthStatus(response.status, path);
+		throw new ApiError(
+			response.status,
+			responseBody,
+			getApiErrorMessage(responseBody),
+		);
 	}
 
 	return responseBody as TResponse;
 }
 
+function getApiErrorMessage(responseBody: unknown) {
+	if (typeof responseBody === "string") {
+		return responseBody;
+	}
+
+	if (!responseBody || typeof responseBody !== "object") {
+		return undefined;
+	}
+
+	const body = responseBody as {
+		error?: unknown;
+		message?: unknown;
+		statusCode?: unknown;
+		statuscode?: unknown;
+	};
+
+	if (typeof body.message === "string" && body.message.trim()) {
+		return body.message;
+	}
+
+	if (typeof body.error === "string" && body.error.trim()) {
+		return body.error;
+	}
+
+	const statusCode = body.statusCode ?? body.statuscode;
+	if (typeof statusCode === "string" && statusCode.trim()) {
+		return `API request failed with statusCode ${statusCode}`;
+	}
+
+	return undefined;
+}
+
+function redirectByAuthStatus(status: number, path: string) {
+	if (typeof window === "undefined") {
+		return;
+	}
+
+	const currentPath = window.location.pathname;
+	const isCurrentUserPath = path === "/me";
+
+	if (
+		(status === 401 || (status === 403 && isCurrentUserPath)) &&
+		currentPath !== "/login"
+	) {
+		window.location.replace("/login");
+		return;
+	}
+
+	if (status === 403 && !isCurrentUserPath && currentPath !== "/forbidden") {
+		window.location.replace("/forbidden");
+	}
+}
+
 function isAuthTokenPath(path: string) {
 	return path === "/auth/token" || path === "/auth/token/refresh";
+}
+
+function isAuthFailureResponse(response: Response, responseBody: unknown) {
+	return (
+		isAuthFailureHttpStatus(response.status) ||
+		isAuthFailureBody(responseBody) ||
+		isAuthFailureBadRequest(response.status, responseBody)
+	);
+}
+
+function isAuthFailureBody(responseBody: unknown) {
+	const statusCode = getApiStatusCode(responseBody);
+
+	return statusCode !== undefined && isAuthFailureHttpStatus(statusCode);
+}
+
+function isFailureBody(responseBody: unknown) {
+	const statusCode = getApiStatusCode(responseBody);
+
+	return statusCode !== undefined && statusCode >= 400;
+}
+
+function isAuthFailureHttpStatus(status: number) {
+	return status === 401 || status === 403;
+}
+
+function isAuthFailureBadRequest(status: number, responseBody: unknown) {
+	if (status !== 400 && getApiStatusCode(responseBody) !== 400) {
+		return false;
+	}
+
+	const message = getApiErrorMessage(responseBody);
+
+	if (!message) {
+		return false;
+	}
+
+	const normalizedMessage = message.toLowerCase();
+
+	return [
+		"token",
+		"auth",
+		"unauthor",
+		"forbidden",
+		"credential",
+		"인증",
+		"인가",
+		"권한",
+		"토큰",
+		"승인",
+		"로그인",
+	].some((keyword) => normalizedMessage.includes(keyword));
+}
+
+function getApiStatusCode(responseBody: unknown) {
+	if (!responseBody || typeof responseBody !== "object") {
+		return undefined;
+	}
+
+	const body = responseBody as {
+		statusCode?: unknown;
+		statuscode?: unknown;
+	};
+	const statusCode = body.statusCode ?? body.statuscode;
+
+	if (typeof statusCode === "number") {
+		return statusCode;
+	}
+
+	if (typeof statusCode === "string") {
+		const parsedStatusCode = Number(statusCode);
+
+		return Number.isNaN(parsedStatusCode) ? undefined : parsedStatusCode;
+	}
+
+	return undefined;
 }
 
 async function refreshStoredAccessToken() {
@@ -135,9 +270,7 @@ async function requestAccessTokenRefresh() {
 			return false;
 		}
 
-		const body = responseBody as ApiResponse<AuthTokenMetadata>;
-
-		if (!body.data) {
+		if (isFailureBody(responseBody)) {
 			return false;
 		}
 

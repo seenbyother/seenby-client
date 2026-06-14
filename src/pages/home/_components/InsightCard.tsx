@@ -2,12 +2,16 @@ import heartCharacter from "@/assets/home/heart.png";
 
 const receivedTags = ["#신중함", "#부지런함", "#상냥한"];
 
-export function InsightCard() {
+type InsightCardProps = {
+	userName: string;
+};
+
+export function InsightCard({ userName }: InsightCardProps) {
 	return (
 		<div className="flex min-h-[153px] items-center justify-between rounded-[20px] bg-[rgba(0,115,255,0.05)] px-[28px] py-4">
 			<div className="min-w-0">
 				<p className="m-0 text-[12px] font-medium leading-normal">
-					민경님의 가장 잘 나타내는 모습은
+					{userName}님의 가장 잘 나타내는 모습은
 				</p>
 				<strong className="mt-2 block text-[38px] font-bold leading-none text-[#0073FF]">
 					꼼꼼함

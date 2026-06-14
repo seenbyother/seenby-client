@@ -2,6 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { exchangeKakaoLoginCode } from "@/features/auth/api";
+import { getPostLoginRedirectPath } from "@/features/onboarding/storage";
 import { ApiError } from "@/shared/api";
 import "./AuthCallbackPage.css";
 
@@ -33,7 +34,7 @@ export function AuthCallbackPage() {
 	const tokenExchangeMutation = useMutation({
 		mutationFn: exchangeKakaoLoginCode,
 		onSuccess: () => {
-			navigate("/auth/success", { replace: true });
+			navigate(getPostLoginRedirectPath(), { replace: true });
 		},
 		onError: (error: unknown) => {
 			setStatus("error");
