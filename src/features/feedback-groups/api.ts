@@ -188,3 +188,44 @@ function validateFeedbackCoverLetterRequest(
 		throw new ApiError(400, null, "자기 인식 키워드를 선택해주세요.");
 	}
 }
+
+export type PublicFeedbackGroup = {
+	name: string;
+	ownerName: string;
+};
+
+export async function getPublicFeedbackGroup(linkToken: string) {
+	return apiClient.get<PublicFeedbackGroup>(`/feedback-groups/link/${linkToken}`, {
+		skipAuthRefresh: true,
+		credentials: "omit",
+	});
+}
+
+type ExperienceFeedback = {
+	experience: string;
+	feedback: string;
+};
+
+type SubmitFeedbackAnswerRequest = {
+	reviewerName: string;
+	experienceFeedbacks: ExperienceFeedback[];
+	keywords: string[];
+};
+
+type SubmitFeedbackAnswerResponse = {
+	id: number;
+	feedbackGroupId: number;
+	reviewerName: string;
+	experienceCount: number;
+	keywords: string[];
+	submittedAt: string;
+	createdAt: string;
+};
+
+export async function submitPublicFeedbackAnswer(linkToken: string, body: SubmitFeedbackAnswerRequest) {
+	return apiClient.post<SubmitFeedbackAnswerResponse>(`/feedback-groups/link/${linkToken}/answers`, {
+		body,
+		skipAuthRefresh: true,
+		credentials: "omit",
+	});
+}

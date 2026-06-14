@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button, Header, ProgressBar } from "@/shared/components";
+import { WritingGuideModal } from "../WritingGuideModal";
 
 interface ThoughtsStepProps {
 	recipientName: string;
@@ -8,6 +9,7 @@ interface ThoughtsStepProps {
 	onChange: (index: number, value: string) => void;
 	onBack: () => void;
 	onSubmit: () => void;
+	isSubmitting?: boolean;
 }
 
 function ChevronUp() {
@@ -31,8 +33,9 @@ function autoResize(el: HTMLTextAreaElement) {
 	el.style.height = `${el.scrollHeight}px`;
 }
 
-export function ThoughtsStep({ recipientName, experiences, thoughts, onChange, onBack, onSubmit }: ThoughtsStepProps) {
+export function ThoughtsStep({ recipientName, experiences, thoughts, onChange, onBack, onSubmit, isSubmitting = false }: ThoughtsStepProps) {
 	const [expandedIndex, setExpandedIndex] = useState(0);
+	const [isGuideOpen, setIsGuideOpen] = useState(false);
 
 	const filledExperiences = experiences.filter((e) => e.trim());
 
@@ -100,17 +103,19 @@ export function ThoughtsStep({ recipientName, experiences, thoughts, onChange, o
 			<div className="px-5 pb-8 flex flex-col gap-2">
 				<button
 					type="button"
+					onClick={() => setIsGuideOpen(true)}
 					className="text-[14px] font-medium leading-[150%] text-[#475569] underline self-center bg-transparent border-none cursor-pointer outline-none"
 				>
 					어떻게 작성하는지 모르겠어요
 				</button>
 				<Button
 					onClick={onSubmit}
-					disabled={!filledExperiences.every((_, index) => thoughts[index]?.trim().length > 0)}
+					disabled={isSubmitting || !filledExperiences.every((_, index) => thoughts[index]?.trim().length > 0)}
 				>
 					전송
 				</Button>
 			</div>
+			<WritingGuideModal isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} />
 		</div>
 	);
 }
