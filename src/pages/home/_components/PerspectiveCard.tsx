@@ -48,7 +48,7 @@ export function PerspectiveCard({
 					/>
 					<div className="relative flex h-[128px] items-center justify-center">
 						<div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-[#EFEFEF]" />
-						<div className="relative z-10 flex h-[33px] w-[33px] items-center justify-center rounded-full bg-white text-[12px] font-bold text-[#616161] shadow-[0_0_2px_rgba(0,0,0,0.12)]">
+						<div className="relative z-[1] flex h-[33px] w-[33px] items-center justify-center rounded-full bg-white text-[12px] font-bold text-[#616161] shadow-[0_0_2px_rgba(0,0,0,0.12)]">
 							VS
 						</div>
 					</div>
@@ -155,7 +155,7 @@ function WordCloud({ side, words }: { side: CloudSide; words: CloudWord[] }) {
 				<span
 					key={word.id}
 					className={[
-						"absolute inline-block max-w-full whitespace-nowrap leading-none tracking-normal",
+						"absolute inline-block overflow-hidden text-ellipsis whitespace-nowrap text-center leading-none tracking-normal",
 						getCloudWordClassName(word),
 					].join(" ")}
 					style={getCloudWordStyle(word, side)}
@@ -176,110 +176,28 @@ function getCloudWordClassName({ slot }: CloudWord) {
 function getCloudWordStyle(word: CloudWord, side: CloudSide): CSSProperties {
 	return {
 		fontSize: getCloudWordFontSize(word),
+		transform: "translate(-50%, -50%)",
 		...getCloudWordPosition(word, side),
 	};
 }
 
 function getCloudWordPosition(
-	{ label, slot }: CloudWord,
+	{ slot }: CloudWord,
 	side: CloudSide,
-): Pick<CSSProperties, "left" | "top"> {
-	if (slot === "upperClose") {
-		return {
-			left: side === "left" ? "7px" : getUpperCloseRightLeft(label),
-			top: side === "left" ? "19px" : "15px",
-		};
-	}
-
-	if (slot === "heroClose") {
-		return {
-			left: getHeroWordLeft(label, side),
-			top: side === "left" ? "45px" : "43px",
-		};
-	}
-
-	if (slot === "topLeft") {
-		return {
-			left: side === "left" ? "5px" : "10px",
-			top: side === "left" ? "8px" : "4px",
-		};
-	}
-
-	if (slot === "topRight") {
-		return {
-			left:
-				side === "left" ? getTopRightLeft(label) : getTopRightRightLeft(label),
-			top: side === "left" ? "32px" : "34px",
-		};
-	}
-
-	if (slot === "hero") {
-		return {
-			left: getHeroWordLeft(label, side),
-			top: side === "left" ? "57px" : "59px",
-		};
-	}
+): Pick<CSSProperties, "left" | "maxWidth" | "top"> {
+	const position = CLOUD_WORD_POSITIONS[side][slot];
 
 	return {
-		left: side === "left" ? "14px" : "20px",
-		top: side === "left" ? "70px" : "67px",
+		left: position.left,
+		maxWidth: position.maxWidth,
+		top: position.top,
 	};
 }
 
-function getHeroWordLeft(label: string, side: CloudSide) {
-	if (label.length >= 7) {
-		return side === "left" ? "3px" : "6px";
-	}
-
-	if (label.length >= 6) {
-		return side === "left" ? "8px" : "8px";
-	}
-
-	if (label.length >= 5) {
-		return side === "left" ? "14px" : "12px";
-	}
-
-	return side === "left" ? "30px" : "22px";
-}
-
-function getUpperCloseRightLeft(label: string) {
-	if (label.length >= 7) {
-		return "30px";
-	}
-
-	if (label.length >= 5) {
-		return "38px";
-	}
-
-	return "58px";
-}
-
-function getTopRightLeft(label: string) {
-	if (label.length >= 7) {
-		return "28px";
-	}
-
-	if (label.length >= 5) {
-		return "48px";
-	}
-
-	return "72px";
-}
-
-function getTopRightRightLeft(label: string) {
-	if (label.length >= 7) {
-		return "38px";
-	}
-
-	if (label.length >= 5) {
-		return "58px";
-	}
-
-	return "82px";
-}
-
 function getCloudWordFontSize({ label, slot }: CloudWord) {
-	const lengthSafeMaxSize = Math.floor(126 / Math.max(label.length, 1));
+	const lengthSafeMaxSize = Math.floor(
+		(isHeroSlot(slot) ? 108 : 92) / Math.max(getVisualLabelLength(label), 1),
+	);
 
 	if (isHeroSlot(slot)) {
 		const baseSize = getHeroWordBaseFontSize(label);
@@ -339,3 +257,33 @@ function getSecondaryWordBaseFontSize(label: string, slot: CloudWord["slot"]) {
 function isHeroSlot(slot: CloudWord["slot"]) {
 	return slot === "hero" || slot === "heroClose";
 }
+
+function getVisualLabelLength(label: string) {
+	return Array.from(label.trim()).reduce((length, character) => {
+		const isAscii = (character.codePointAt(0) ?? 0) <= 0x7f;
+
+		return length + (isAscii ? 0.62 : 1);
+	}, 0);
+}
+
+const CLOUD_WORD_POSITIONS: Record<
+	CloudSide,
+	Record<CloudWordSlot, { left: string; maxWidth: string; top: string }>
+> = {
+	left: {
+		bottomLeft: { left: "31%", maxWidth: "58%", top: "81%" },
+		hero: { left: "49%", maxWidth: "88%", top: "66%" },
+		heroClose: { left: "49%", maxWidth: "88%", top: "58%" },
+		topLeft: { left: "30%", maxWidth: "58%", top: "18%" },
+		topRight: { left: "70%", maxWidth: "58%", top: "41%" },
+		upperClose: { left: "38%", maxWidth: "68%", top: "31%" },
+	},
+	right: {
+		bottomLeft: { left: "35%", maxWidth: "62%", top: "78%" },
+		hero: { left: "50%", maxWidth: "88%", top: "67%" },
+		heroClose: { left: "50%", maxWidth: "88%", top: "58%" },
+		topLeft: { left: "31%", maxWidth: "58%", top: "17%" },
+		topRight: { left: "72%", maxWidth: "56%", top: "42%" },
+		upperClose: { left: "61%", maxWidth: "68%", top: "30%" },
+	},
+};
