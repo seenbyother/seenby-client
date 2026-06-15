@@ -161,7 +161,7 @@ function getAnalysisHistoryItems(
 		title: item.group.title,
 		dateLabel: formatYearMonthDay(item.analyzedAt ?? item.createdAt),
 		href: `/analysis/ai/${item.analysisId}`,
-		statusLabel: item.status === "PROCESSING" ? "작성 중" : "완료",
+		statusLabel: item.status === "PROCESSING" ? "생성 중" : "완료",
 		statusTone: item.status === "PROCESSING" ? "blue" : "gray",
 	}));
 }
@@ -190,7 +190,7 @@ function getCoverLetterStatusLabel(
 ) {
 	switch (status) {
 		case "PROCESSING":
-			return "작성 중";
+			return "생성 중";
 		case "FAILED":
 			return "실패";
 		default:
