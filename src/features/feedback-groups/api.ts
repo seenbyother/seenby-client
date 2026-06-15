@@ -40,6 +40,8 @@ export type FeedbackGroupDetail = {
 	linkActive: boolean;
 	endDate: string | null;
 	answers: FeedbackAnswerSummary[];
+	aiAnalysisStatus: string | null;
+	coverLetterStatus: string | null;
 	createdAt: string;
 	updatedAt: string;
 };
