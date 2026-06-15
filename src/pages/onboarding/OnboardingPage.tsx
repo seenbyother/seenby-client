@@ -1,10 +1,14 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { getCurrentUserName, useCurrentUser } from "@/features/auth/hooks";
+import type { CurrentUser } from "@/features/auth/api";
+import {
+	currentUserQueryKey,
+	getCurrentUserName,
+	useCurrentUser,
+} from "@/features/auth/hooks";
 import { saveSelfKeywords } from "@/features/onboarding/api";
 import { MAX_SELF_KEYWORD_COUNT_BY_CATEGORY } from "@/features/onboarding/selfKeywords";
-import { markOnboardingCompleted } from "@/features/onboarding/storage";
 import { ApiError } from "@/shared/api";
 import { OnboardingCompleteStep } from "./_components/OnboardingCompleteStep";
 import { OnboardingIntroStep } from "./_components/OnboardingIntroStep";
@@ -15,6 +19,7 @@ type OnboardingStep = "intro" | "keywords" | "complete";
 
 export function OnboardingPage() {
 	const navigate = useNavigate();
+	const queryClient = useQueryClient();
 	const { data: currentUser } = useCurrentUser();
 	const [step, setStep] = useState<OnboardingStep>("intro");
 	const [keywordStepIndex, setKeywordStepIndex] = useState(0);
@@ -24,6 +29,11 @@ export function OnboardingPage() {
 	const saveSelfKeywordsMutation = useMutation({
 		mutationFn: saveSelfKeywords,
 		onSuccess: () => {
+			queryClient.setQueryData<CurrentUser | undefined>(
+				currentUserQueryKey,
+				(previous) =>
+					previous ? { ...previous, onboardingCompleted: true } : previous,
+			);
 			setStep("complete");
 		},
 	});
@@ -75,7 +85,6 @@ export function OnboardingPage() {
 	};
 
 	const completeOnboarding = () => {
-		markOnboardingCompleted();
 		navigate("/home", { replace: true });
 	};
 

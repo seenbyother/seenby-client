@@ -1,8 +1,8 @@
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
-import { exchangeKakaoLoginCode } from "@/features/auth/api";
-import { getPostLoginRedirectPath } from "@/features/onboarding/storage";
+import { exchangeKakaoLoginCode, getCurrentUser } from "@/features/auth/api";
+import { getPostLoginRedirectPath } from "@/features/onboarding/routing";
 import { ApiError } from "@/shared/api";
 import "./AuthCallbackPage.css";
 
@@ -32,9 +32,12 @@ export function AuthCallbackPage() {
 		"카카오 로그인 정보를 확인하고 있어요.",
 	);
 	const tokenExchangeMutation = useMutation({
-		mutationFn: exchangeKakaoLoginCode,
-		onSuccess: () => {
-			navigate(getPostLoginRedirectPath(), { replace: true });
+		mutationFn: async (code: string) => {
+			await exchangeKakaoLoginCode(code);
+			return getCurrentUser();
+		},
+		onSuccess: (currentUser) => {
+			navigate(getPostLoginRedirectPath(currentUser), { replace: true });
 		},
 		onError: (error: unknown) => {
 			setStatus("error");

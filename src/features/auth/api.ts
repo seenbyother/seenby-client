@@ -14,6 +14,7 @@ export type AuthTokenMetadata = {
 export type CurrentUser = {
 	id?: number;
 	nickname?: string;
+	onboardingCompleted: boolean;
 };
 
 const AUTH_CALLBACK_PATH = "/auth/callback";
