@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import type { CurrentUser } from "@/features/auth/api";
 import {
 	currentUserQueryKey,
 	getCurrentUserName,
@@ -28,12 +27,8 @@ export function OnboardingPage() {
 	>({});
 	const saveSelfKeywordsMutation = useMutation({
 		mutationFn: saveSelfKeywords,
-		onSuccess: () => {
-			queryClient.setQueryData<CurrentUser | undefined>(
-				currentUserQueryKey,
-				(previous) =>
-					previous ? { ...previous, onboardingCompleted: true } : previous,
-			);
+		onSuccess: async () => {
+			await queryClient.refetchQueries({ queryKey: currentUserQueryKey });
 			setStep("complete");
 		},
 	});
