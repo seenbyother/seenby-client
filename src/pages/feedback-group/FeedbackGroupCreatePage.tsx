@@ -8,12 +8,14 @@ import {
 	createFeedbackGroup,
 	type FeedbackGroupsResponse,
 } from "@/features/feedback-groups/api";
+import { getCurrentUserName, useCurrentUser } from "@/features/auth/hooks";
 import { GroupCreateHeader } from "@/pages/feedback-group/_components/GroupCreateHeader";
 import { ShareButton } from "@/pages/feedback-group/_components/ShareButton";
 import { StepTitle } from "@/pages/feedback-group/_components/StepTitle";
 import { CONTEXT_OPTIONS, RELATION_OPTIONS } from "@/pages/feedback-group/constants";
 import { ApiError } from "@/shared/api";
 import { Button, Input, KeywordChip } from "@/shared/components";
+import { shareToKakaoWithTemplate } from "@/shared/lib/kakao";
 
 type CreateStep = "name" | "relation" | "context" | "complete";
 
@@ -40,6 +42,8 @@ function getErrorMessage(error: unknown) {
 export function FeedbackGroupCreatePage() {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
+	const { data: currentUser } = useCurrentUser();
+	const userName = getCurrentUserName(currentUser);
 	const [step, setStep] = useState<CreateStep>("name");
 	const [groupName, setGroupName] = useState("");
 	const [relation, setRelation] = useState("");
@@ -94,8 +98,11 @@ export function FeedbackGroupCreatePage() {
 		await navigator.clipboard.writeText(shareUrl);
 	};
 
-	const shareToKakao = async () => {
-		await copyShareLink();
+	const shareToKakao = () => {
+		shareToKakaoWithTemplate(134316, {
+			userName,
+			link: `feedback?token=${linkToken}`,
+		});
 	};
 
 	const submitGroupName = (event: { preventDefault(): void }) => {
