@@ -123,17 +123,17 @@ export function CoverLetterDetailPage() {
 					{categoryLabel} 역량이 잘 드러난{"\n"}자기소개서가 완성됐어요
 				</h1>
 
-				<section className="mt-6 flex h-[118px] items-start gap-3 overflow-hidden rounded-[22px] border border-[#DBEAFE] bg-[#EEF6FF] px-[17px] py-[14px] shadow-[0_4px_7px_rgba(0,0,0,0.05)]">
-					<div className="z-10 flex min-w-0 flex-1 flex-col gap-[3px]">
-						<div className="flex min-w-0 flex-col gap-[2px]">
+				<section className="relative mt-6 h-[118px] overflow-hidden rounded-[22px] border border-[#DBEAFE] bg-[#EEF6FF] shadow-[0_4px_7px_rgba(0,0,0,0.05)]">
+					<div className="absolute left-[17px] top-[17px] z-10 flex w-[calc(100%-124px)] max-w-[241px] min-w-0 flex-col gap-[3px]">
+						<div className="flex min-w-0 flex-col gap-[3px]">
 							<p className="m-0 text-[13px] font-bold leading-[18px] text-[#0073FF]">
 								이 경험에 집중했어요
 							</p>
-							<p className="m-0 line-clamp-2 break-keep text-[17px] font-bold leading-[1.12] text-[#111827]">
+							<p className="m-0 overflow-hidden text-ellipsis whitespace-nowrap text-[22px] font-bold leading-[28px] text-[#111827]">
 								{coverLetter.categoryTitle}
 							</p>
 						</div>
-						<div className="flex flex-wrap items-center gap-2">
+						<div className="flex min-w-0 items-center gap-2">
 							<SourceBadge>
 								피드백 {coverLetter.sourceFeedbackCount}개 반영
 							</SourceBadge>
@@ -145,7 +145,7 @@ export function CoverLetterDetailPage() {
 					<img
 						src={chTextImage}
 						alt=""
-						className="mt-1 h-[77px] w-[62px] shrink-0 object-contain"
+						className="absolute right-[28px] top-[13px] h-[77px] w-[62px] object-contain"
 					/>
 				</section>
 
@@ -192,9 +192,11 @@ function CoverLetterLayout({
 	onBack: () => void;
 }) {
 	return (
-		<div className="relative flex min-h-screen flex-col bg-[#F8F8F8] text-black">
-			<Header onBack={onBack} withBottomSpacing={false} />
-			{children}
+		<div className="min-h-screen bg-[#F8F8F8] text-black">
+			<div className="relative mx-auto flex min-h-screen w-full max-w-[402px] flex-col bg-[#F8F8F8]">
+				<Header onBack={onBack} withBottomSpacing={false} />
+				{children}
+			</div>
 		</div>
 	);
 }
@@ -209,7 +211,7 @@ function CenteredMessage({ children }: { children: React.ReactNode }) {
 
 function SourceBadge({ children }: { children: React.ReactNode }) {
 	return (
-		<span className="rounded-[13px] border border-[#DBEAFE] bg-white px-[9px] py-1 text-center text-[11px] font-semibold leading-4 text-[#0073FF]">
+		<span className="min-w-0 shrink overflow-hidden text-ellipsis whitespace-nowrap rounded-[13px] border border-[#DBEAFE] bg-white px-[10px] py-[5px] text-center text-[11px] font-semibold leading-4 text-[#0073FF]">
 			{children}
 		</span>
 	);

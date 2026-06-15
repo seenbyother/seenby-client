@@ -180,7 +180,7 @@ function getCoverLetterHistoryItems(
 		href: `/cover-letters/${item.id}`,
 		statusLabel: getCoverLetterStatusLabel(item.status),
 		statusTone: getCoverLetterStatusTone(item.status),
-		disabled: item.status === "FAILED",
+		disabled: item.status !== "COMPLETED",
 		dimmed: item.status === "FAILED",
 	}));
 }
