@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Navigate, Outlet, Route, Routes } from "react-router";
+import { Navigate, Outlet, Route, Routes, useLocation } from "react-router";
 import { useCurrentUser } from "@/features/auth/hooks";
 import { AnalysisDetailPage } from "@/pages/analysis/AnalysisDetailPage";
 import { AnalysisHistoryPage } from "@/pages/analysis/AnalysisHistoryPage";
@@ -72,7 +72,8 @@ export function AppRoutes() {
 }
 
 function ProtectedRoute() {
-	const { isError, isLoading } = useCurrentUser();
+	const location = useLocation();
+	const { data: currentUser, isError, isLoading } = useCurrentUser();
 
 	if (isLoading) {
 		return <AuthCheckScreen />;
@@ -80,6 +81,18 @@ function ProtectedRoute() {
 
 	if (isError) {
 		return <Navigate to="/login" replace />;
+	}
+
+	if (!currentUser) {
+		return <Navigate to="/login" replace />;
+	}
+
+	if (!currentUser.onboardingCompleted && location.pathname !== "/onboarding") {
+		return <Navigate to="/onboarding" replace />;
+	}
+
+	if (currentUser.onboardingCompleted && location.pathname === "/onboarding") {
+		return <Navigate to="/home" replace />;
 	}
 
 	return <Outlet />;
