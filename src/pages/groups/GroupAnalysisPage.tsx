@@ -114,14 +114,8 @@ export function GroupAnalysisPage() {
 
 			return { analysis, coverLetter };
 		},
-		onSuccess: (result) => {
-			navigate(`/groups/${id}/analysis/result`, {
-				state: {
-					status: "success",
-					analysis: result.analysis,
-					coverLetter: result.coverLetter,
-				},
-			});
+		onSuccess: () => {
+			navigate("/analysis", { replace: true });
 		},
 		onError: (error) => {
 			navigate(`/groups/${id}/analysis/result`, {
