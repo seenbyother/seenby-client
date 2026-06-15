@@ -48,7 +48,7 @@ export function PerspectiveCard({
 					/>
 					<div className="relative flex h-[128px] items-center justify-center">
 						<div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-[#EFEFEF]" />
-						<div className="relative z-10 flex h-[33px] w-[33px] items-center justify-center rounded-full bg-white text-[12px] font-bold text-[#616161] shadow-[0_0_2px_rgba(0,0,0,0.12)]">
+						<div className="relative z-[1] flex h-[33px] w-[33px] items-center justify-center rounded-full bg-white text-[12px] font-bold text-[#616161] shadow-[0_0_2px_rgba(0,0,0,0.12)]">
 							VS
 						</div>
 					</div>
