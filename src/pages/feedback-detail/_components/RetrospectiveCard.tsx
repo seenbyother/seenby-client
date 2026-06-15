@@ -17,6 +17,7 @@ export function RetrospectiveCard({
 }: RetrospectiveCardProps) {
 	const hasRetrospective = retrospective.trim().length > 0;
 	const experienceNumber = experienceFeedback.displayOrder + 1;
+	const characterCount = retrospective.length;
 
 	return (
 		<article className="rounded-[20px] bg-white p-4">
@@ -52,6 +53,9 @@ export function RetrospectiveCard({
 						<span className="block text-[#696969]">-</span>
 					)}
 				</button>
+				<p className="mt-2 mb-0 text-right text-[13px] font-medium leading-none text-[#9CA3AF]">
+					{characterCount}자
+				</p>
 			</div>
 		</article>
 	);

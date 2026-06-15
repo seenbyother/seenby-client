@@ -32,6 +32,7 @@ export function RetrospectiveSheet({
 	const dragStartYRef = useRef<number | null>(null);
 	const dragOffsetRef = useRef(0);
 	const hasRetrospectiveContent = value.trim().length > 0;
+	const characterCount = value.length;
 
 	const closeGuide = () => {
 		setIsGuideOpen(false);
@@ -180,8 +181,11 @@ export function RetrospectiveSheet({
 				value={value}
 				onChange={(event) => onChange(event.target.value)}
 				placeholder="나의 회고를 작성해보세요."
-				className="mt-[30px] min-h-0 flex-1 w-full resize-none border-0 bg-transparent px-[39px] pb-8 text-[20px] leading-[1.5] text-[#4B5563] outline-none placeholder:text-[#D1D5DB]"
+				className="mt-[30px] min-h-0 flex-1 w-full resize-none border-0 bg-transparent px-[39px] pb-2 text-[20px] leading-[1.5] text-[#4B5563] outline-none placeholder:text-[#D1D5DB]"
 			/>
+			<p className="m-0 px-[39px] pb-8 text-right text-[13px] font-medium leading-none text-[#9CA3AF]">
+				{characterCount}자
+			</p>
 		</section>
 	);
 }
