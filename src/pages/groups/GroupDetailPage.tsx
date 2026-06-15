@@ -7,7 +7,10 @@ import {
 	getFeedbackGroupDetail,
 	updateFeedbackGroupLinkActive,
 } from "@/features/feedback-groups/api";
+import { getCurrentUserName, useCurrentUser } from "@/features/auth/hooks";
+import kakaoIcon from "@/assets/kakao.svg";
 import { Header } from "@/shared/components";
+import { shareToKakaoWithTemplate } from "@/shared/lib/kakao";
 import { formatYearMonth, formatYearMonthDay } from "@/shared/utils/date";
 import { FeedbackCard, type FeedbackItem } from "./_components/FeedbackCard";
 import { FloatingActionButton } from "./_components/FloatingActionButton";
@@ -42,6 +45,8 @@ export function GroupDetailPage() {
 	const { groupId } = useParams<{ groupId: string }>();
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
+	const { data: currentUser } = useCurrentUser();
+	const userName = getCurrentUserName(currentUser);
 	const [activeTab, setActiveTab] = useState<FilterTab>("전체");
 	const [showAiInfo, setShowAiInfo] = useState(false);
 	const [copyMessage, setCopyMessage] = useState("");
@@ -174,6 +179,14 @@ export function GroupDetailPage() {
 		}
 	};
 
+	const shareGroupToKakao = () => {
+		if (!group?.linkToken) return;
+		shareToKakaoWithTemplate(134316, {
+			userName,
+			link: `feedback?token=${group.linkToken}`,
+		});
+	};
+
 	if (!isValidGroupId) {
 		return (
 			<div className="min-h-screen flex items-center justify-center bg-[#F8F8F8]">
@@ -254,21 +267,30 @@ export function GroupDetailPage() {
 					</p>
 				)}
 
-				<button
-					type="button"
-					onClick={copyFeedbackLink}
-					className="w-full bg-white rounded-[16px] flex items-center justify-between px-[10px] py-4 border-none cursor-pointer"
-				>
+				<div className="w-full bg-white rounded-[16px] flex items-center justify-between px-[10px] py-4">
 					<span className="text-[16px] font-bold text-black">
 						피드백 링크 복사하기
 					</span>
-					<span
-						className="text-[14px]"
-						style={{ color: "#696969", textDecoration: "underline" }}
-					>
-						복사하기
-					</span>
-				</button>
+					<div className="flex items-center gap-3">
+						<button
+							type="button"
+							onClick={shareGroupToKakao}
+							className="border-none p-1.5 rounded-full cursor-pointer flex items-center justify-center"
+							style={{ background: "#FEE500" }}
+							aria-label="카카오톡으로 공유하기"
+						>
+							<img src={kakaoIcon} alt="" className="w-4 h-4 object-contain" />
+						</button>
+						<button
+							type="button"
+							onClick={copyFeedbackLink}
+							className="border-none bg-transparent p-0 cursor-pointer text-[14px]"
+							style={{ color: "#696969", textDecoration: "underline" }}
+						>
+							복사하기
+						</button>
+					</div>
+				</div>
 				{copyMessage && (
 					<p className="-mt-3 mb-0 px-[10px] text-[13px] font-medium text-[#696969]">
 						{copyMessage}
