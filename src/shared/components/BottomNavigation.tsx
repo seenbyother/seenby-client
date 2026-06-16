@@ -99,7 +99,7 @@ export function BottomNavigation({
 	return (
 		<nav
 			aria-label="하단 내비게이션"
-			className="absolute bottom-[25px] left-1/2 z-50 isolate flex h-[85px] w-[min(362px,calc(100%-40px))] -translate-x-1/2 select-none items-center justify-between overflow-hidden rounded-full border border-white/35 bg-white/25 px-[30px] py-2 shadow-[inset_0_1px_1px_rgba(255,255,255,0.45),0_14px_34px_rgba(15,23,42,0.06)] backdrop-blur-xl"
+			className="fixed bottom-[25px] left-1/2 z-50 isolate flex h-[85px] w-[min(362px,calc(100%-40px))] -translate-x-1/2 select-none items-center justify-between overflow-hidden rounded-full border border-white/35 bg-white/25 px-[30px] py-2 shadow-[inset_0_1px_1px_rgba(255,255,255,0.45),0_14px_34px_rgba(15,23,42,0.06)] backdrop-blur-xl"
 		>
 			<div
 				aria-hidden="true"
