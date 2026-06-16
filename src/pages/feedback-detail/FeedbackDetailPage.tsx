@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import BackIcon from "@/assets/feedback/before.svg?react";
+import { getCurrentUserName, useCurrentUser } from "@/features/auth/hooks";
 import {
 	getFeedbackAnswerDetail,
 	saveFeedbackRetrospect,
@@ -11,8 +12,6 @@ import { ExperienceCard } from "@/pages/feedback-detail/_components/ExperienceCa
 import { RetrospectiveCard } from "@/pages/feedback-detail/_components/RetrospectiveCard";
 import { RetrospectiveSheet } from "@/pages/feedback-detail/_components/RetrospectiveSheet";
 import { ApiError } from "@/shared/api";
-
-const RECIPIENT_NAME = "김민경";
 
 function getErrorMessage(error: unknown) {
 	if (error instanceof ApiError) {
@@ -38,6 +37,8 @@ export function FeedbackDetailPage() {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const { answerId } = useParams<{ answerId: string }>();
+	const { data: currentUser } = useCurrentUser();
+	const recipientName = getCurrentUserName(currentUser);
 	const currentAnswerId = Number(answerId);
 	const isValidAnswerId =
 		Number.isInteger(currentAnswerId) && currentAnswerId > 0;
@@ -231,21 +232,16 @@ export function FeedbackDetailPage() {
 
 			<section className="rounded-[20px] bg-white p-4">
 				<h2 className="m-0 text-[16px] font-bold leading-normal">
-					{RECIPIENT_NAME} 님에게 어울리는 단어
+					{recipientName} 님에게 어울리는 단어
 				</h2>
 				{data.keywords.length === 0 ? (
 					<p className="mt-3 mb-0 text-[14px] text-[#696969]">
 						선택된 단어가 없어요
 					</p>
 				) : (
-					<div className="mt-3 grid grid-cols-4 gap-3">
+					<div className="mt-3 grid grid-cols-4 gap-x-2 gap-y-3">
 						{data.keywords.map((keyword) => (
-							<span
-								key={keyword}
-								className="flex h-8 items-center justify-center whitespace-nowrap rounded-[20px] border border-[rgba(0,115,255,0.1)] bg-[rgba(0,115,255,0.05)] px-[10px] text-[13px] font-semibold leading-none text-[#0073FF]"
-							>
-								#{keyword}
-							</span>
+							<KeywordBadge key={keyword} keyword={keyword} />
 						))}
 					</div>
 				)}
@@ -260,7 +256,7 @@ export function FeedbackDetailPage() {
 					<section key={experienceFeedback.id} className="flex flex-col gap-5">
 						<ExperienceCard
 							experienceFeedback={experienceFeedback}
-							recipientName={RECIPIENT_NAME}
+							recipientName={recipientName}
 						/>
 						<RetrospectiveCard
 							experienceFeedback={experienceFeedback}
@@ -285,6 +281,33 @@ export function FeedbackDetailPage() {
 			</div>
 		</FeedbackDetailLayout>
 	);
+}
+
+function KeywordBadge({ keyword }: { keyword: string }) {
+	const label = `#${keyword}`;
+	const fontSize = getKeywordBadgeFontSize(label);
+
+	return (
+		<span
+			className="flex h-8 min-w-0 items-center justify-center whitespace-nowrap rounded-[20px] border border-[rgba(0,115,255,0.1)] bg-[rgba(0,115,255,0.05)] px-1 font-semibold leading-none text-[#0073FF]"
+			style={{ fontSize }}
+			title={label}
+		>
+			{label}
+		</span>
+	);
+}
+
+function getKeywordBadgeFontSize(label: string) {
+	if (label.length >= 8) {
+		return 10;
+	}
+
+	if (label.length >= 6) {
+		return 11;
+	}
+
+	return 13;
 }
 
 type FeedbackDetailLayoutProps = {
