@@ -2,13 +2,6 @@ import type { CSSProperties } from "react";
 import type { HomeSelfKeyword, RankedHomeKeyword } from "@/features/home/api";
 import { AnalysisHint } from "./InsightCard";
 
-const WORD_SLOTS_BY_COUNT: Record<number, readonly CloudWordSlot[]> = {
-	1: ["heroClose"],
-	2: ["heroClose", "upperClose"],
-	3: ["hero", "topLeft", "topRight"],
-	4: ["hero", "topLeft", "topRight", "bottomLeft"],
-};
-
 export function PerspectiveCard({
 	otherKeywords,
 	selfKeywords,
@@ -20,14 +13,16 @@ export function PerspectiveCard({
 		.map(({ keyword }, index, keywords) => ({
 			id: `other-${index}-${keyword}`,
 			label: keyword,
-			slot: getCloudWordSlot(index, keywords.length),
+			rowIndex: index,
+			rowCount: keywords.length,
 		}));
 	const selfWords = selfKeywords
 		.slice(0, 3)
 		.map(({ keyword }, index, keywords) => ({
 			id: `self-${index}-${keyword}`,
 			label: keyword,
-			slot: getCloudWordSlot(index, keywords.length),
+			rowIndex: index,
+			rowCount: keywords.length,
 		}));
 
 	return (
@@ -65,18 +60,6 @@ export function PerspectiveCard({
 			{!hasOtherKeywords ? <AnalysisHint /> : null}
 		</div>
 	);
-}
-
-function getCloudWordSlot(index: number, count: number) {
-	const slots =
-		WORD_SLOTS_BY_COUNT[count] ??
-		WORD_SLOTS_BY_COUNT[4] ??
-		WORD_SLOTS_BY_COUNT[3] ??
-		WORD_SLOTS_BY_COUNT[2] ??
-		WORD_SLOTS_BY_COUNT[1] ??
-		(["heroClose"] as const);
-
-	return slots[index] ?? "heroClose";
 }
 
 interface PerspectiveCardProps {
@@ -119,7 +102,7 @@ function PerspectiveColumn({
 					].join(" ")}
 				/>
 			</div>
-			<div className="relative h-[92px] w-full min-w-0 max-w-[136px] overflow-hidden text-[#3A3A3A]">
+			<div className="relative h-[116px] w-full min-w-0 max-w-[136px] overflow-hidden text-[#3A3A3A]">
 				{words.length > 0 ? (
 					<WordCloud side={side} words={words} />
 				) : (
@@ -135,18 +118,11 @@ function PerspectiveColumn({
 type CloudWord = {
 	id: string;
 	label: string;
-	slot: CloudWordSlot;
+	rowCount: number;
+	rowIndex: number;
 };
 
 type CloudSide = "left" | "right";
-
-type CloudWordSlot =
-	| "bottomLeft"
-	| "hero"
-	| "heroClose"
-	| "topLeft"
-	| "topRight"
-	| "upperClose";
 
 function WordCloud({ side, words }: { side: CloudSide; words: CloudWord[] }) {
 	return (
@@ -155,7 +131,7 @@ function WordCloud({ side, words }: { side: CloudSide; words: CloudWord[] }) {
 				<span
 					key={word.id}
 					className={[
-						"absolute inline-block overflow-hidden text-ellipsis whitespace-nowrap text-center leading-none tracking-normal",
+						"absolute inline-block overflow-hidden text-ellipsis whitespace-nowrap text-center leading-[1.08] tracking-normal",
 						getCloudWordClassName(word),
 					].join(" ")}
 					style={getCloudWordStyle(word, side)}
@@ -167,8 +143,8 @@ function WordCloud({ side, words }: { side: CloudSide; words: CloudWord[] }) {
 	);
 }
 
-function getCloudWordClassName({ slot }: CloudWord) {
-	return isHeroSlot(slot)
+function getCloudWordClassName({ rowIndex }: CloudWord) {
+	return rowIndex === 0
 		? "font-normal text-[#333333]"
 		: "font-normal text-[#3A3A3A]";
 }
@@ -182,30 +158,32 @@ function getCloudWordStyle(word: CloudWord, side: CloudSide): CSSProperties {
 }
 
 function getCloudWordPosition(
-	{ slot }: CloudWord,
+	{ rowCount, rowIndex }: CloudWord,
 	side: CloudSide,
 ): Pick<CSSProperties, "left" | "maxWidth" | "top"> {
-	const position = CLOUD_WORD_POSITIONS[side][slot];
+	const rows = CLOUD_WORD_LAYOUTS[Math.min(Math.max(rowCount, 1), 4)];
+	const row = rows[rowIndex] ?? rows[rows.length - 1];
+	const position = row[side];
 
 	return {
 		left: position.left,
 		maxWidth: position.maxWidth,
-		top: position.top,
+		top: row.top,
 	};
 }
 
-function getCloudWordFontSize({ label, slot }: CloudWord) {
+function getCloudWordFontSize({ label, rowIndex }: CloudWord) {
 	const lengthSafeMaxSize = Math.floor(
-		(isHeroSlot(slot) ? 108 : 92) / Math.max(getVisualLabelLength(label), 1),
+		(rowIndex === 0 ? 108 : 92) / Math.max(getVisualLabelLength(label), 1),
 	);
 
-	if (isHeroSlot(slot)) {
+	if (rowIndex === 0) {
 		const baseSize = getHeroWordBaseFontSize(label);
 
 		return `${Math.max(12, Math.min(baseSize, lengthSafeMaxSize))}px`;
 	}
 
-	const baseSize = getSecondaryWordBaseFontSize(label, slot);
+	const baseSize = getSecondaryWordBaseFontSize(label);
 
 	return `${Math.max(10, Math.min(baseSize, lengthSafeMaxSize))}px`;
 }
@@ -230,15 +208,7 @@ function getHeroWordBaseFontSize(label: string) {
 	return 30;
 }
 
-function getSecondaryWordBaseFontSize(label: string, slot: CloudWord["slot"]) {
-	if (slot === "bottomLeft") {
-		if (label.length >= 7) {
-			return 11;
-		}
-
-		return label.length >= 5 ? 12 : 14;
-	}
-
+function getSecondaryWordBaseFontSize(label: string) {
 	if (label.length >= 8) {
 		return 12;
 	}
@@ -254,10 +224,6 @@ function getSecondaryWordBaseFontSize(label: string, slot: CloudWord["slot"]) {
 	return 20;
 }
 
-function isHeroSlot(slot: CloudWord["slot"]) {
-	return slot === "hero" || slot === "heroClose";
-}
-
 function getVisualLabelLength(label: string) {
 	return Array.from(label.trim()).reduce((length, character) => {
 		const isAscii = (character.codePointAt(0) ?? 0) <= 0x7f;
@@ -266,24 +232,70 @@ function getVisualLabelLength(label: string) {
 	}, 0);
 }
 
-const CLOUD_WORD_POSITIONS: Record<
-	CloudSide,
-	Record<CloudWordSlot, { left: string; maxWidth: string; top: string }>
+const CLOUD_WORD_LAYOUTS: Record<
+	number,
+	readonly {
+		top: string;
+		left: { left: string; maxWidth: string };
+		right: { left: string; maxWidth: string };
+	}[]
 > = {
-	left: {
-		bottomLeft: { left: "31%", maxWidth: "58%", top: "81%" },
-		hero: { left: "49%", maxWidth: "88%", top: "66%" },
-		heroClose: { left: "49%", maxWidth: "88%", top: "58%" },
-		topLeft: { left: "30%", maxWidth: "58%", top: "18%" },
-		topRight: { left: "70%", maxWidth: "58%", top: "41%" },
-		upperClose: { left: "38%", maxWidth: "68%", top: "31%" },
-	},
-	right: {
-		bottomLeft: { left: "35%", maxWidth: "62%", top: "78%" },
-		hero: { left: "50%", maxWidth: "88%", top: "67%" },
-		heroClose: { left: "50%", maxWidth: "88%", top: "58%" },
-		topLeft: { left: "31%", maxWidth: "58%", top: "17%" },
-		topRight: { left: "72%", maxWidth: "56%", top: "42%" },
-		upperClose: { left: "61%", maxWidth: "68%", top: "30%" },
-	},
+	1: [
+		{
+			top: "50%",
+			left: { left: "49%", maxWidth: "88%" },
+			right: { left: "50%", maxWidth: "88%" },
+		},
+	],
+	2: [
+		{
+			top: "34%",
+			left: { left: "38%", maxWidth: "68%" },
+			right: { left: "62%", maxWidth: "68%" },
+		},
+		{
+			top: "66%",
+			left: { left: "68%", maxWidth: "62%" },
+			right: { left: "32%", maxWidth: "62%" },
+		},
+	],
+	3: [
+		{
+			top: "23%",
+			left: { left: "36%", maxWidth: "66%" },
+			right: { left: "64%", maxWidth: "66%" },
+		},
+		{
+			top: "50%",
+			left: { left: "68%", maxWidth: "62%" },
+			right: { left: "32%", maxWidth: "62%" },
+		},
+		{
+			top: "77%",
+			left: { left: "42%", maxWidth: "68%" },
+			right: { left: "58%", maxWidth: "68%" },
+		},
+	],
+	4: [
+		{
+			top: "16%",
+			left: { left: "36%", maxWidth: "66%" },
+			right: { left: "64%", maxWidth: "66%" },
+		},
+		{
+			top: "39%",
+			left: { left: "69%", maxWidth: "60%" },
+			right: { left: "31%", maxWidth: "60%" },
+		},
+		{
+			top: "62%",
+			left: { left: "42%", maxWidth: "66%" },
+			right: { left: "58%", maxWidth: "66%" },
+		},
+		{
+			top: "85%",
+			left: { left: "65%", maxWidth: "62%" },
+			right: { left: "35%", maxWidth: "62%" },
+		},
+	],
 };
