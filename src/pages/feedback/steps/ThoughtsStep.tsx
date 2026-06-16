@@ -92,6 +92,9 @@ export function ThoughtsStep({ recipientName, experiences, thoughts, onChange, o
 												style={{ height: "auto" }}
 											/>
 											<div className="h-[2px] bg-[#D9D9D9]" />
+											<div className="flex justify-end mt-1">
+												<span className="text-[12px] text-[#A1A9B2]">{(thoughts[index] ?? "").length}자</span>
+											</div>
 										</div>
 									)}
 								</div>
