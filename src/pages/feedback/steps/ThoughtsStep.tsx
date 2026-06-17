@@ -66,20 +66,21 @@ export function ThoughtsStep({ recipientName, experiences, thoughts, onChange, o
 							<div key={index} className="flex gap-[13px] px-1">
 								<button
 									type="button"
-									className="shrink-0 mt-0.5 bg-transparent border-none cursor-pointer outline-none p-0"
+									className="shrink-0 mt-0.5 self-start bg-transparent border-none cursor-pointer outline-none p-0"
 									onClick={() => setExpandedIndex(isExpanded ? -1 : index)}
 								>
 									{isExpanded ? <ChevronUp /> : <ChevronDown />}
 								</button>
 								<div className="flex-1">
 									<p
-										className={`text-[20px] font-medium leading-[150%] m-0 ${isExpanded ? "text-[#0073FF]" : "text-black"}`}
+										className={`text-[16px] font-medium leading-[150%] m-0 ${isExpanded ? "text-[#0073FF]" : "text-black"}`}
 									>
 										{exp}
 									</p>
 									{isExpanded && (
 										<div className="flex flex-col mt-2">
 											<textarea
+												ref={(el) => { if (el) autoResize(el); }}
 												value={thoughts[index] ?? ""}
 												onChange={(e) => {
 													onChange(index, e.target.value);
@@ -87,10 +88,13 @@ export function ThoughtsStep({ recipientName, experiences, thoughts, onChange, o
 												}}
 												placeholder="나의 생각 작성하기"
 												rows={1}
-												className="w-full resize-none overflow-hidden text-[20px] font-medium leading-[150%] text-black placeholder:text-[#D9D9D9] bg-transparent outline-none border-none"
+												className="w-full resize-none overflow-hidden text-[16px] font-medium leading-[150%] text-black placeholder:text-[#D9D9D9] bg-transparent outline-none border-none"
 												style={{ height: "auto" }}
 											/>
 											<div className="h-[2px] bg-[#D9D9D9]" />
+											<div className="flex justify-end mt-1">
+												<span className="text-[12px] text-[#A1A9B2]">{(thoughts[index] ?? "").length}자</span>
+											</div>
 										</div>
 									)}
 								</div>

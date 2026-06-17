@@ -56,10 +56,14 @@ export function ExperienceStep({ recipientName, experiences, onChange, onAdd, on
 									}}
 									placeholder="-"
 									rows={1}
+									maxLength={200}
 									className="w-full resize-none overflow-hidden text-[20px] font-medium leading-[150%] text-black placeholder:text-[#D9D9D9] bg-transparent outline-none border-none"
 									style={{ height: "auto" }}
 								/>
 								<div className="h-[2px] bg-[#D9D9D9]" />
+								<div className="flex justify-end mt-1">
+									<span className="text-[12px] text-[#A1A9B2]">{exp.length}/200</span>
+								</div>
 							</div>
 							{experiences.length > 1 && (
 								<button
