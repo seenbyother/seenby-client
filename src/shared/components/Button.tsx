@@ -8,7 +8,7 @@ interface ButtonProps {
 
 export function Button({ children, variant = "primary", onClick, disabled = false, type = "button" }: ButtonProps) {
 	const base =
-		"w-full h-14 rounded-2xl text-[17px] leading-[125.2%] flex items-center justify-center transition-opacity border-none outline-none disabled:opacity-40 disabled:cursor-not-allowed";
+		"w-full h-14 rounded-2xl text-[17px] leading-[125.2%] flex items-center justify-center transition border-none outline-none disabled:opacity-40 disabled:cursor-not-allowed active:brightness-90";
 
 	const styles =
 		variant === "primary"

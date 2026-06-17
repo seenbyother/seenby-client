@@ -246,7 +246,7 @@ export function FeedbackGroupCreatePage() {
 
 			{step === "complete" && (
 				<>
-					<div className="flex-1 flex flex-col items-center px-5 pt-[139px]">
+					<div className="flex-1 flex flex-col items-center px-5 pt-[50px]">
 						<div className="text-center">
 							<h1 className="m-0 text-[32px] font-semibold leading-[160%] tracking-[-0.02em] text-black">
 								"{trimmedGroupName || "SeenBy"}" 그룹 생성 완료
