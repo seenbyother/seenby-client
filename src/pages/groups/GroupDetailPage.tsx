@@ -161,14 +161,10 @@ export function GroupDetailPage() {
 						? answer.retrospectiveCompleted
 						: !answer.retrospectiveCompleted,
 				);
-	const isAlreadyAnalyzed =
-		group?.aiAnalysisStatus === "COMPLETED" ||
-		group?.coverLetterStatus === "COMPLETED";
 	const isAiAvailable =
 		!group?.linkActive &&
 		answers.length >= 3 &&
-		answers.every((answer) => answer.retrospectiveCompleted) &&
-		!isAlreadyAnalyzed;
+		answers.every((answer) => answer.retrospectiveCompleted);
 
 	const copyFeedbackLink = async () => {
 		if (!group?.linkToken) return;
@@ -353,9 +349,9 @@ export function GroupDetailPage() {
 								className="text-[12px] font-medium leading-[1.6] m-0 whitespace-pre-line"
 								style={{ color: "#EDF0FF" }}
 							>
-								{isAlreadyAnalyzed
-									? "이미 AI 분석 내역이 존재해요."
-									: "피드백이 3개 이상 수집되고\n수집이 종료된 후 모든 피드백의\n회고가 완료되면 AI 인사이트 분석이 가능해요."}
+								피드백이 3개 이상 수집되고{"\n"}
+								수집이 종료된 후 모든 피드백의{"\n"}
+								회고가 완료되면 AI 인사이트 분석이 가능해요.
 							</p>
 						</div>
 					) : null
