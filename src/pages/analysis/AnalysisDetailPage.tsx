@@ -1,9 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import { type AnalysisDetail, getAnalysisDetail } from "@/features/feedback-groups/api";
+import {
+	hasViewedAnalysis,
+	markAnalysisViewed,
+} from "@/features/feedback-groups/analysisViewed";
+import {
+	type AnalysisDetail,
+	getAnalysisDetail,
+} from "@/features/feedback-groups/api";
 import { Header } from "@/shared/components";
 import { formatYearMonthDay } from "@/shared/utils/date";
 import { AnalysisCard } from "./_components/AnalysisCard";
+import { AnalysisStepView } from "./_components/AnalysisStepView";
 import { ComparisonTable } from "./_components/ComparisonTable";
 import { KeywordChart } from "./_components/KeywordChart";
 import { SelfAwarenessSection } from "./_components/SelfAwarenessSection";
@@ -12,6 +21,8 @@ export function AnalysisDetailPage() {
 	const navigate = useNavigate();
 	const { analysisId } = useParams<{ analysisId: string }>();
 	const id = Number(analysisId);
+	const [showStep, setShowStep] = useState(() => !hasViewedAnalysis(id));
+	const [stepIndex, setStepIndex] = useState(0);
 
 	const { data, isLoading, isError, error } = useQuery({
 		queryKey: ["analysis-detail", id],
@@ -19,11 +30,35 @@ export function AnalysisDetailPage() {
 		enabled: !Number.isNaN(id),
 	});
 
+	useEffect(() => {
+		if (data && showStep) {
+			markAnalysisViewed(id);
+		}
+	}, [data, id, showStep]);
+
+	const headerTitle =
+		data && showStep ? (
+			<>
+				<span className="min-w-0 truncate">{data.group.name}</span>
+				<span className="shrink-0 whitespace-nowrap">피드백 분석</span>
+			</>
+		) : (
+			"피드백 분석 내역"
+		);
+
+	const handleBack = () => {
+		if (showStep && stepIndex > 0) {
+			setStepIndex((prev) => prev - 1);
+			return;
+		}
+		navigate(-1);
+	};
+
 	return (
 		<div className="bg-[#F8F8F8] min-h-screen">
 			<Header
-				title="피드백 분석 내역"
-				onBack={() => navigate(-1)}
+				title={headerTitle}
+				onBack={handleBack}
 				withBottomSpacing={false}
 			/>
 
@@ -47,7 +82,16 @@ export function AnalysisDetailPage() {
 					</button>
 				</div>
 			) : data ? (
-				<AnalysisContent data={data} />
+				showStep ? (
+					<AnalysisStepView
+						data={data}
+						stepIndex={stepIndex}
+						onStepIndexChange={setStepIndex}
+						onFinish={() => setShowStep(false)}
+					/>
+				) : (
+					<AnalysisContent data={data} />
+				)
 			) : null}
 		</div>
 	);
