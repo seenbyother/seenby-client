@@ -1,8 +1,9 @@
+import type { ReactNode } from "react";
 import IcArrowLeft from "@/assets/ic_arrow_left.svg?react";
 
 interface HeaderProps {
 	onBack: () => void;
-	title?: string;
+	title?: ReactNode;
 	withBottomSpacing?: boolean;
 }
 
@@ -24,7 +25,7 @@ export function Header({
 				<IcArrowLeft width={32} height={32} />
 			</button>
 			{title ? (
-				<h1 className="m-0 text-[20px] font-normal leading-normal text-black">
+				<h1 className="m-0 flex min-w-0 flex-1 items-baseline justify-center gap-1 px-10 text-[20px] font-normal leading-normal text-black">
 					{title}
 				</h1>
 			) : null}
