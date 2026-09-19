@@ -3,6 +3,7 @@ import {
 	ApiError,
 	type ApiResponse,
 	apiClient,
+	ensureApiSuccess,
 	unwrapApiData,
 } from "@/shared/api";
 
@@ -86,4 +87,18 @@ export async function getCurrentUser() {
 	);
 
 	return unwrapApiData(response);
+}
+
+export async function logout() {
+	const response = await apiClient.post<ApiResponse<null>>("/auth/logout", {
+		skipAuthRefresh: true,
+	});
+
+	ensureApiSuccess(response);
+}
+
+export async function deleteCurrentUser() {
+	const response = await apiClient.delete<ApiResponse<null>>("/me");
+
+	ensureApiSuccess(response);
 }
