@@ -2,7 +2,9 @@ import {
 	ApiError,
 	type ApiResponse,
 	apiClient,
+	ensureApiSuccess,
 	unwrapApiData,
+	unwrapOptionalApiData,
 } from "@/shared/api";
 
 export type FeedbackGroup = {
@@ -36,6 +38,8 @@ export type FeedbackAnswerSummary = {
 export type FeedbackGroupDetail = {
 	id: number;
 	name: string;
+	relationshipType: string;
+	contextType: string;
 	linkToken: string;
 	linkActive: boolean;
 	endDate: string | null;
@@ -74,6 +78,31 @@ export async function createFeedbackGroup(body: CreateFeedbackGroupRequest) {
 	>("/feedback-groups", { body });
 
 	return unwrapApiData(response, ["200", "201"]);
+}
+
+export type UpdateFeedbackGroupRequest = {
+	name: string;
+	relationshipType: string;
+	contextType: string;
+};
+
+export async function updateFeedbackGroup(
+	groupId: number,
+	body: UpdateFeedbackGroupRequest,
+) {
+	const response = await apiClient.put<
+		ApiResponse<FeedbackGroup> | FeedbackGroup | undefined
+	>(`/feedback-groups/${groupId}`, { body });
+
+	return unwrapOptionalApiData(response);
+}
+
+export async function deleteFeedbackGroup(groupId: number) {
+	const response = await apiClient.delete<ApiResponse<null> | undefined>(
+		`/feedback-groups/${groupId}`,
+	);
+
+	if (response) ensureApiSuccess(response, ["200", "204"]);
 }
 
 export async function updateFeedbackGroupLinkActive(

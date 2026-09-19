@@ -45,3 +45,11 @@ export async function saveFeedbackRetrospect(
 
 	ensureApiSuccess(response);
 }
+
+export async function deleteFeedbackAnswer(answerId: number) {
+	const response = await apiClient.delete<ApiResponse<null> | undefined>(
+		`/feedback-answers/${answerId}`,
+	);
+
+	if (response) ensureApiSuccess(response, ["200", "204"]);
+}
