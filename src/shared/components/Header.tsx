@@ -5,12 +5,14 @@ interface HeaderProps {
 	onBack: () => void;
 	title?: ReactNode;
 	withBottomSpacing?: boolean;
+	rightContent?: ReactNode;
 }
 
 export function Header({
 	onBack,
 	title,
 	withBottomSpacing = true,
+	rightContent,
 }: HeaderProps) {
 	return (
 		<header
@@ -28,6 +30,11 @@ export function Header({
 				<h1 className="m-0 flex min-w-0 flex-1 items-baseline justify-center gap-1 px-10 text-[20px] font-normal leading-normal text-black">
 					{title}
 				</h1>
+			) : null}
+			{rightContent ? (
+				<div className="absolute right-5 top-1/2 -translate-y-1/2">
+					{rightContent}
+				</div>
 			) : null}
 		</header>
 	);

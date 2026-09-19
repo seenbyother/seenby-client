@@ -180,6 +180,10 @@ export async function getAnalysisHistory() {
 	return unwrapApiData(response);
 }
 
+export async function deleteFeedbackAnalysis(analysisId: number) {
+	await apiClient.delete(`/feedback-groups/analysis/${analysisId}`);
+}
+
 export type AnalysisKeyword = {
 	rank: number;
 	keyword: string;
