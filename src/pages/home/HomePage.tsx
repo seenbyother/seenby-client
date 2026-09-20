@@ -22,7 +22,6 @@ export function HomePage() {
 		queryFn: getHomeKeywordSummary,
 		enabled: Boolean(currentUser),
 	});
-
 	if (!currentUser) {
 		return null;
 	}
@@ -35,7 +34,7 @@ export function HomePage() {
 		<main className="min-h-screen bg-[#F8F8F8] text-left text-black">
 			<div className="relative mx-auto h-[100svh] w-full max-w-[402px] overflow-hidden bg-[#F8F8F8]">
 				<div className="h-full overflow-y-auto px-5 pb-[132px] pt-8">
-					<HomeHeader />
+					<HomeHeader onAccountClick={() => navigate("/mypage")} />
 
 					<section className="mt-6">
 						<h2 className="m-0 text-[28px] font-bold leading-[1.18]">

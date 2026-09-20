@@ -1,17 +1,32 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import { type AnalysisDetail, getAnalysisDetail } from "@/features/feedback-groups/api";
-import { Header } from "@/shared/components";
+import {
+	hasViewedAnalysis,
+	markAnalysisViewed,
+} from "@/features/feedback-groups/analysisViewed";
+import {
+	type AnalysisDetail,
+	deleteFeedbackAnalysis,
+	getAnalysisDetail,
+} from "@/features/feedback-groups/api";
+import { ConfirmDialog, Header, KebabMenu } from "@/shared/components";
 import { formatYearMonthDay } from "@/shared/utils/date";
 import { AnalysisCard } from "./_components/AnalysisCard";
+import { AnalysisStepView } from "./_components/AnalysisStepView";
 import { ComparisonTable } from "./_components/ComparisonTable";
 import { KeywordChart } from "./_components/KeywordChart";
 import { SelfAwarenessSection } from "./_components/SelfAwarenessSection";
+import { getErrorMessage } from "./utils";
 
 export function AnalysisDetailPage() {
 	const navigate = useNavigate();
+	const queryClient = useQueryClient();
 	const { analysisId } = useParams<{ analysisId: string }>();
 	const id = Number(analysisId);
+	const [showStep, setShowStep] = useState(() => !hasViewedAnalysis(id));
+	const [stepIndex, setStepIndex] = useState(0);
+	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
 	const { data, isLoading, isError, error } = useQuery({
 		queryKey: ["analysis-detail", id],
@@ -19,13 +34,78 @@ export function AnalysisDetailPage() {
 		enabled: !Number.isNaN(id),
 	});
 
+	const deleteAnalysisMutation = useMutation({
+		mutationFn: () => deleteFeedbackAnalysis(id),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["analysis-history"] });
+			navigate("/analysis", { replace: true });
+		},
+	});
+
+	useEffect(() => {
+		if (data && showStep) {
+			markAnalysisViewed(id);
+		}
+	}, [data, id, showStep]);
+
+	const headerTitle =
+		data && showStep ? (
+			<>
+				<span className="min-w-0 truncate">{data.group.name}</span>
+				<span className="shrink-0 whitespace-nowrap">피드백 분석</span>
+			</>
+		) : (
+			"피드백 분석 내역"
+		);
+
+	const handleBack = () => {
+		if (showStep && stepIndex > 0) {
+			setStepIndex((prev) => prev - 1);
+			return;
+		}
+		navigate(-1);
+	};
+
 	return (
 		<div className="bg-[#F8F8F8] min-h-screen">
 			<Header
-				title="피드백 분석 내역"
-				onBack={() => navigate(-1)}
+				title={headerTitle}
+				onBack={handleBack}
 				withBottomSpacing={false}
+				rightContent={
+					data ? (
+						<KebabMenu
+							items={[
+								{
+									label: "삭제하기",
+									destructive: true,
+									onClick: () => setIsDeleteDialogOpen(true),
+								},
+							]}
+						/>
+					) : undefined
+				}
 			/>
+
+			{isDeleteDialogOpen ? (
+				<ConfirmDialog
+					title="분석 결과를 삭제할까요?"
+					description="삭제된 분석 결과는 복구할 수 없어요."
+					confirmLabel="삭제하기"
+					pendingLabel="삭제 중..."
+					isPending={deleteAnalysisMutation.isPending}
+					errorMessage={
+						deleteAnalysisMutation.isError
+							? getErrorMessage(
+									deleteAnalysisMutation.error,
+									"분석 결과를 삭제하지 못했어요.",
+								)
+							: undefined
+					}
+					onConfirm={() => deleteAnalysisMutation.mutate()}
+					onCancel={() => setIsDeleteDialogOpen(false)}
+				/>
+			) : null}
 
 			{isLoading ? (
 				<div className="flex items-center justify-center h-[calc(100svh-64px)]">
@@ -47,7 +127,16 @@ export function AnalysisDetailPage() {
 					</button>
 				</div>
 			) : data ? (
-				<AnalysisContent data={data} />
+				showStep ? (
+					<AnalysisStepView
+						data={data}
+						stepIndex={stepIndex}
+						onStepIndexChange={setStepIndex}
+						onFinish={() => setShowStep(false)}
+					/>
+				) : (
+					<AnalysisContent data={data} />
+				)
 			) : null}
 		</div>
 	);

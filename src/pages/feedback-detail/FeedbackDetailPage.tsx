@@ -2,9 +2,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import BackIcon from "@/assets/feedback/before.svg?react";
 import { getCurrentUserName, useCurrentUser } from "@/features/auth/hooks";
 import {
+	deleteFeedbackAnswer,
 	getFeedbackAnswerDetail,
 	saveFeedbackRetrospect,
 } from "@/features/feedback-answers/api";
@@ -12,6 +12,7 @@ import { ExperienceCard } from "@/pages/feedback-detail/_components/ExperienceCa
 import { RetrospectiveCard } from "@/pages/feedback-detail/_components/RetrospectiveCard";
 import { RetrospectiveSheet } from "@/pages/feedback-detail/_components/RetrospectiveSheet";
 import { ApiError } from "@/shared/api";
+import { ActionMenu, ConfirmDialog, Header } from "@/shared/components";
 
 function getErrorMessage(error: unknown) {
 	if (error instanceof ApiError) {
@@ -54,6 +55,7 @@ export function FeedbackDetailPage() {
 	const [editingExperienceFeedbackId, setEditingExperienceFeedbackId] =
 		useState<number | null>(null);
 	const [isSheetOpen, setIsSheetOpen] = useState(false);
+	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 	const [retrospectiveSaveError, setRetrospectiveSaveError] = useState<
 		string | null
 	>(null);
@@ -83,6 +85,20 @@ export function FeedbackDetailPage() {
 		},
 		onError: (mutationError) => {
 			setRetrospectiveSaveError(getErrorMessage(mutationError));
+		},
+	});
+	const deleteMutation = useMutation({
+		mutationFn: () => deleteFeedbackAnswer(currentAnswerId),
+		onSuccess: async () => {
+			queryClient.removeQueries({
+				queryKey: ["feedback-answer", currentAnswerId],
+			});
+			if (data) {
+				await queryClient.invalidateQueries({
+					queryKey: ["feedback-group", data.feedbackGroupId],
+				});
+				navigate(`/groups/${data.feedbackGroupId}`, { replace: true });
+			}
 		},
 	});
 
@@ -208,6 +224,17 @@ export function FeedbackDetailPage() {
 	return (
 		<FeedbackDetailLayout
 			onBack={() => navigate(-1)}
+			rightAction={
+				<ActionMenu
+					items={[
+						{
+							label: "피드백 삭제",
+							destructive: true,
+							onSelect: () => setIsDeleteDialogOpen(true),
+						},
+					]}
+				/>
+			}
 			sheet={
 				<RetrospectiveSheet
 					isOpen={isSheetOpen}
@@ -279,6 +306,26 @@ export function FeedbackDetailPage() {
 					</section>
 				))}
 			</div>
+
+			{isDeleteDialogOpen ? (
+				<ConfirmDialog
+					title={`${data.reviewerName} 님의 피드백을 삭제할까요?`}
+					description="삭제한 피드백은 다시 복구할 수 없어요."
+					confirmLabel="삭제하기"
+					destructive
+					isPending={deleteMutation.isPending}
+					errorMessage={
+						deleteMutation.isError
+							? getErrorMessage(deleteMutation.error)
+							: null
+					}
+					onCancel={() => {
+						deleteMutation.reset();
+						setIsDeleteDialogOpen(false);
+					}}
+					onConfirm={() => deleteMutation.mutate()}
+				/>
+			) : null}
 		</FeedbackDetailLayout>
 	);
 }
@@ -314,28 +361,25 @@ type FeedbackDetailLayoutProps = {
 	children: ReactNode;
 	onBack: () => void;
 	sheet?: ReactNode;
+	rightAction?: ReactNode;
 };
 
 function FeedbackDetailLayout({
 	children,
 	onBack,
 	sheet,
+	rightAction,
 }: FeedbackDetailLayoutProps) {
 	return (
 		<main className="min-h-screen bg-[#F8F8F8] text-left text-black">
 			<div className="relative mx-auto h-[100svh] w-full max-w-[402px] overflow-hidden bg-[#F8F8F8]">
-				<div className="h-full overflow-y-auto px-[19px] pb-[124px] pt-8">
-					<header className="mb-6 flex h-8 items-center">
-						<button
-							type="button"
-							onClick={onBack}
-							aria-label="뒤로 가기"
-							className="flex h-8 w-8 items-center justify-center border-0 bg-transparent p-0"
-						>
-							<BackIcon aria-hidden="true" />
-						</button>
-					</header>
-					{children}
+				<div className="h-full overflow-y-auto pb-[124px]">
+					<Header
+						onBack={onBack}
+						rightAction={rightAction}
+						withBottomSpacing={false}
+					/>
+					<div className="px-[19px] pt-4">{children}</div>
 				</div>
 				{sheet}
 			</div>
