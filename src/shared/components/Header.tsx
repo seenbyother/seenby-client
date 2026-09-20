@@ -4,16 +4,20 @@ import IcArrowLeft from "@/assets/ic_arrow_left.svg?react";
 interface HeaderProps {
 	onBack: () => void;
 	title?: ReactNode;
-	rightAction?: ReactNode;
 	withBottomSpacing?: boolean;
+	rightAction?: ReactNode;
+	rightContent?: ReactNode;
 }
 
 export function Header({
 	onBack,
 	title,
-	rightAction,
 	withBottomSpacing = true,
+	rightAction,
+	rightContent,
 }: HeaderProps) {
+	const rightElement = rightAction ?? rightContent;
+
 	return (
 		<header
 			className={`relative z-40 flex h-16 items-center justify-center overflow-visible px-5${withBottomSpacing ? " mb-5" : ""}`}
@@ -31,9 +35,9 @@ export function Header({
 					{title}
 				</h1>
 			) : null}
-			{rightAction ? (
+			{rightElement ? (
 				<div className="absolute right-5 top-1/2 -translate-y-1/2">
-					{rightAction}
+					{rightElement}
 				</div>
 			) : null}
 		</header>
