@@ -24,6 +24,17 @@ export function unwrapApiData<TData>(
 	return response.data;
 }
 
+export function unwrapOptionalApiData<TData>(
+	response: ApiResponse<TData> | TData | undefined,
+	acceptedStatusCodes: string[] = ["200"],
+) {
+	if (response === undefined) return undefined;
+	if (!isApiResponse(response)) return response;
+
+	ensureApiSuccess(response, acceptedStatusCodes);
+	return response.data ?? undefined;
+}
+
 export function ensureApiSuccess<TData>(
 	response: ApiResponse<TData>,
 	acceptedStatusCodes: string[] = ["200"],

@@ -1,13 +1,13 @@
-import { useEffect, useRef } from "react";
+import { type ReactNode, useEffect, useId, useRef } from "react";
 
 interface ConfirmDialogProps {
 	title: string;
-	description?: string;
+	description?: ReactNode;
 	confirmLabel?: string;
 	cancelLabel?: string;
 	pendingLabel?: string;
 	isPending?: boolean;
-	errorMessage?: string;
+	errorMessage?: string | null;
 	destructive?: boolean;
 	onConfirm: () => void;
 	onCancel: () => void;
@@ -21,11 +21,15 @@ export function ConfirmDialog({
 	pendingLabel = "처리 중...",
 	isPending = false,
 	errorMessage,
-	destructive = true,
+	destructive = false,
 	onConfirm,
 	onCancel,
 }: ConfirmDialogProps) {
+	const titleId = useId();
+	const descriptionId = useId();
 	const cancelButtonRef = useRef<HTMLButtonElement>(null);
+	const onCancelRef = useRef(onCancel);
+	onCancelRef.current = onCancel;
 
 	useEffect(() => {
 		const previousOverflow = document.body.style.overflow;
@@ -34,7 +38,7 @@ export function ConfirmDialog({
 
 		const handleKeyDown = (event: KeyboardEvent) => {
 			if (event.key === "Escape" && !isPending) {
-				onCancel();
+				onCancelRef.current();
 			}
 		};
 
@@ -43,7 +47,7 @@ export function ConfirmDialog({
 			document.body.style.overflow = previousOverflow;
 			window.removeEventListener("keydown", handleKeyDown);
 		};
-	}, [isPending, onCancel]);
+	}, [isPending]);
 
 	return (
 		<div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 px-8">
@@ -55,24 +59,19 @@ export function ConfirmDialog({
 				onClick={onCancel}
 			/>
 			<section
-				aria-labelledby="confirm-dialog-title"
-				aria-describedby={
-					description ? "confirm-dialog-description" : undefined
-				}
+				aria-labelledby={titleId}
+				aria-describedby={description ? descriptionId : undefined}
 				aria-modal="true"
-				className="relative z-10 w-full max-w-[320px] rounded-2xl bg-white p-5 shadow-[0_16px_40px_rgba(15,23,42,0.18)]"
+				className="relative z-10 w-full max-w-[340px] rounded-2xl bg-white p-5 shadow-[0_16px_40px_rgba(15,23,42,0.18)]"
 				role="dialog"
 			>
-				<h2
-					id="confirm-dialog-title"
-					className="m-0 text-[17px] font-bold text-[#222222]"
-				>
+				<h2 id={titleId} className="m-0 text-[17px] font-bold text-[#222222]">
 					{title}
 				</h2>
 				{description ? (
 					<p
-						id="confirm-dialog-description"
-						className="mb-0 mt-2 text-[13px] font-medium leading-[150%] text-[#71717A]"
+						id={descriptionId}
+						className="mb-0 mt-2 whitespace-pre-line break-keep text-[13px] font-medium leading-[150%] text-[#71717A]"
 					>
 						{description}
 					</p>

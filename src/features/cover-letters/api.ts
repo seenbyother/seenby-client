@@ -1,4 +1,10 @@
-import { type ApiResponse, apiClient, unwrapApiData } from "@/shared/api";
+import {
+	type ApiResponse,
+	apiClient,
+	ensureApiSuccess,
+	unwrapApiData,
+	unwrapOptionalApiData,
+} from "@/shared/api";
 
 export type CoverLetterDetail = {
 	id: number;
@@ -42,4 +48,35 @@ export async function getCoverLetterDetail(coverLetterId: number) {
 	>(`/cover-letters/${coverLetterId}`);
 
 	return unwrapApiData(response);
+}
+
+export type CoverLetterRegenerationResult = {
+	id: number;
+	status: "PROCESSING" | "COMPLETED" | "FAILED";
+};
+
+export type RegenerateCoverLetterRequest = {
+	answerIds: number[];
+	selfKeywords: string[];
+};
+
+export async function regenerateCoverLetter(
+	coverLetterId: number,
+	body: RegenerateCoverLetterRequest,
+) {
+	const response = await apiClient.post<
+		| ApiResponse<CoverLetterRegenerationResult>
+		| CoverLetterRegenerationResult
+		| undefined
+	>(`/cover-letters/${coverLetterId}/regenerate`, { body });
+
+	return unwrapOptionalApiData(response, ["200", "201", "202"]);
+}
+
+export async function deleteCoverLetter(coverLetterId: number) {
+	const response = await apiClient.delete<ApiResponse<null> | undefined>(
+		`/cover-letters/${coverLetterId}`,
+	);
+
+	if (response) ensureApiSuccess(response, ["200", "204"]);
 }

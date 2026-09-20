@@ -1,10 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import CopyIcon from "@/assets/icons/copy.svg?react";
 import chTextImage from "@/assets/images/ch_text.png";
-import { getCoverLetterDetail } from "@/features/cover-letters/api";
-import { Header } from "@/shared/components";
+import {
+	deleteCoverLetter,
+	getCoverLetterDetail,
+} from "@/features/cover-letters/api";
+import { ActionMenu, ConfirmDialog, Header } from "@/shared/components";
 
 const CATEGORY_LABELS: Record<string, string> = {
 	COLLABORATION: "협업",
@@ -18,11 +21,21 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 export function CoverLetterDetailPage() {
 	const navigate = useNavigate();
+	const queryClient = useQueryClient();
 	const { coverLetterId } = useParams<{ coverLetterId: string }>();
 	const id = Number(coverLetterId);
 	const isValidCoverLetterId = Number.isInteger(id) && id > 0;
 	const [copyMessage, setCopyMessage] = useState("");
+	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 	const copyMessageTimerRef = useRef<number | null>(null);
+	const deleteMutation = useMutation({
+		mutationFn: () => deleteCoverLetter(id),
+		onSuccess: async () => {
+			queryClient.removeQueries({ queryKey: ["cover-letter", id] });
+			await queryClient.invalidateQueries({ queryKey: ["cover-letters"] });
+			navigate("/analysis", { replace: true });
+		},
+	});
 
 	const {
 		data: coverLetter,
@@ -117,7 +130,27 @@ export function CoverLetterDetailPage() {
 	}
 
 	return (
-		<CoverLetterLayout onBack={() => navigate(-1)}>
+		<CoverLetterLayout
+			onBack={() => navigate(-1)}
+			rightAction={
+				<ActionMenu
+					items={[
+						{
+							label: "다시 생성하기",
+							onSelect: () =>
+								navigate(
+									`/groups/${coverLetter.feedbackGroupId}/analysis?mode=cover-letter-regenerate&coverLetterId=${id}`,
+								),
+						},
+						{
+							label: "삭제하기",
+							destructive: true,
+							onSelect: () => setIsDeleteDialogOpen(true),
+						},
+					]}
+				/>
+			}
+		>
 			<main className="flex flex-1 flex-col px-[18px] pb-[94px] pt-[5px]">
 				<h1 className="m-0 max-w-[290px] whitespace-pre-line text-[24px] font-bold leading-[1.2] text-black">
 					{categoryLabel} 역량이 잘 드러난{"\n"}자기소개서가 완성됐어요
@@ -180,6 +213,28 @@ export function CoverLetterDetailPage() {
 					피드백 보러가기
 				</button>
 			</div>
+
+			{isDeleteDialogOpen ? (
+				<ConfirmDialog
+					title="자기소개서를 삭제할까요?"
+					description={
+						<>
+							<span>삭제한 자기소개서는 다시 복구할 수 없어요.</span>
+							<br />
+							<span>원본 피드백은 삭제되지 않아요.</span>
+						</>
+					}
+					confirmLabel="삭제하기"
+					destructive
+					isPending={deleteMutation.isPending}
+					errorMessage={getErrorMessage(deleteMutation.error)}
+					onCancel={() => {
+						deleteMutation.reset();
+						setIsDeleteDialogOpen(false);
+					}}
+					onConfirm={() => deleteMutation.mutate()}
+				/>
+			) : null}
 		</CoverLetterLayout>
 	);
 }
@@ -187,14 +242,20 @@ export function CoverLetterDetailPage() {
 function CoverLetterLayout({
 	children,
 	onBack,
+	rightAction,
 }: {
 	children: React.ReactNode;
 	onBack: () => void;
+	rightAction?: React.ReactNode;
 }) {
 	return (
 		<div className="min-h-screen bg-[#F8F8F8] text-black">
 			<div className="relative mx-auto flex min-h-screen w-full max-w-[402px] flex-col bg-[#F8F8F8]">
-				<Header onBack={onBack} withBottomSpacing={false} />
+				<Header
+					onBack={onBack}
+					rightAction={rightAction}
+					withBottomSpacing={false}
+				/>
 				{children}
 			</div>
 		</div>
@@ -289,6 +350,8 @@ function markdownToPlainText(content: string) {
 }
 
 function getErrorMessage(error: unknown) {
+	if (!error) return null;
+
 	if (error instanceof Error && error.message) {
 		return error.message;
 	}

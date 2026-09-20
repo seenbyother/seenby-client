@@ -5,6 +5,7 @@ interface HeaderProps {
 	onBack: () => void;
 	title?: ReactNode;
 	withBottomSpacing?: boolean;
+	rightAction?: ReactNode;
 	rightContent?: ReactNode;
 }
 
@@ -12,11 +13,14 @@ export function Header({
 	onBack,
 	title,
 	withBottomSpacing = true,
+	rightAction,
 	rightContent,
 }: HeaderProps) {
+	const rightElement = rightAction ?? rightContent;
+
 	return (
 		<header
-			className={`relative flex h-16 items-center justify-center px-5${withBottomSpacing ? " mb-5" : ""}`}
+			className={`relative z-40 flex h-16 items-center justify-center overflow-visible px-5${withBottomSpacing ? " mb-5" : ""}`}
 		>
 			<button
 				type="button"
@@ -31,9 +35,9 @@ export function Header({
 					{title}
 				</h1>
 			) : null}
-			{rightContent ? (
+			{rightElement ? (
 				<div className="absolute right-5 top-1/2 -translate-y-1/2">
-					{rightContent}
+					{rightElement}
 				</div>
 			) : null}
 		</header>

@@ -1,7 +1,8 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useNavigate, useParams, useSearchParams } from "react-router";
 import { getCurrentUserName, useCurrentUser } from "@/features/auth/hooks";
+import { regenerateCoverLetter } from "@/features/cover-letters/api";
 import {
 	createFeedbackAnalysis,
 	createFeedbackCoverLetter,
@@ -39,7 +40,9 @@ type AnalysisSubmitFailure = {
 
 export function GroupAnalysisPage() {
 	const { groupId } = useParams<{ groupId: string }>();
+	const [searchParams] = useSearchParams();
 	const navigate = useNavigate();
+	const queryClient = useQueryClient();
 	const [step, setStep] = useState<Step>("selectFeedback");
 	const [openCategoryId, setOpenCategoryId] =
 		useState<SelfKeywordCategoryId | null>("mood");
@@ -50,6 +53,11 @@ export function GroupAnalysisPage() {
 		useState(false);
 
 	const id = Number(groupId);
+	const regenerationCoverLetterId = Number(searchParams.get("coverLetterId"));
+	const isCoverLetterRegeneration =
+		searchParams.get("mode") === "cover-letter-regenerate" &&
+		Number.isInteger(regenerationCoverLetterId) &&
+		regenerationCoverLetterId > 0;
 	const isValidGroupId = Number.isInteger(id) && id > 0;
 	const { data: currentUser } = useCurrentUser();
 	const userName = getCurrentUserName(currentUser);
@@ -84,7 +92,7 @@ export function GroupAnalysisPage() {
 	const [selectedIds, setSelectedIds] = useState<Set<number>>(() => new Set());
 
 	const analysisMutation = useMutation<
-		AnalysisSubmitResult,
+		AnalysisSubmitResult | FeedbackCoverLetterCreateResult,
 		AnalysisSubmitFailure
 	>({
 		mutationFn: async () => {
@@ -94,6 +102,27 @@ export function GroupAnalysisPage() {
 				answerIds,
 				selfKeywords,
 			};
+
+			if (isCoverLetterRegeneration) {
+				try {
+					const regeneratedCoverLetter = await regenerateCoverLetter(
+						regenerationCoverLetterId,
+						requestBody,
+					);
+
+					return (
+						regeneratedCoverLetter ?? {
+							id: regenerationCoverLetterId,
+							status: "PROCESSING",
+						}
+					);
+				} catch {
+					throw {
+						message:
+							"자기소개서를 다시 생성하지 못했어요. 잠시 후 다시 시도해주세요.",
+					};
+				}
+			}
 			const [analysisResult, coverLetterResult] = await Promise.allSettled([
 				createFeedbackAnalysis(id, requestBody),
 				createFeedbackCoverLetter(id, requestBody),
@@ -114,7 +143,11 @@ export function GroupAnalysisPage() {
 
 			return { analysis, coverLetter };
 		},
-		onSuccess: () => {
+		onSuccess: async () => {
+			await Promise.all([
+				queryClient.invalidateQueries({ queryKey: ["cover-letters"] }),
+				queryClient.invalidateQueries({ queryKey: ["analysis-history"] }),
+			]);
 			navigate("/analysis", { replace: true });
 		},
 		onError: (error) => {
@@ -306,7 +339,9 @@ export function GroupAnalysisPage() {
 							<p className="m-0 text-right text-[13px] font-medium text-red-500">
 								{getErrorMessage(
 									analysisMutation.error,
-									"AI 분석을 요청하지 못했어요.",
+									isCoverLetterRegeneration
+										? "자기소개서를 다시 생성하지 못했어요."
+										: "AI 분석을 요청하지 못했어요.",
 								)}
 							</p>
 						) : null
@@ -314,10 +349,14 @@ export function GroupAnalysisPage() {
 				>
 					<span className="text-[16px] font-medium leading-none">
 						{analysisMutation.isPending
-							? "제출 중"
+							? isCoverLetterRegeneration
+								? "생성 중"
+								: "제출 중"
 							: isSavedSelfKeywordsLoading
 								? "불러오는 중"
-								: "제출 하기"}
+								: isCoverLetterRegeneration
+									? "다시 생성"
+									: "제출 하기"}
 					</span>
 					<span className="text-[24px] leading-none" aria-hidden="true">
 						→
@@ -330,7 +369,9 @@ export function GroupAnalysisPage() {
 	return (
 		<div className="min-h-screen bg-[#F8F8F8] flex flex-col relative">
 			<Header
-				title="피드백 선택"
+				title={
+					isCoverLetterRegeneration ? "재생성할 피드백 선택" : "피드백 선택"
+				}
 				onBack={() => navigate(-1)}
 				withBottomSpacing={false}
 			/>
