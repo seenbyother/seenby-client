@@ -1,79 +1,116 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router";
 import {
 	hasViewedAnalysis,
 	markAnalysisViewed,
 } from "@/features/feedback-groups/analysisViewed";
 import {
-	type AnalysisDetail,
 	deleteFeedbackAnalysis,
 	getAnalysisDetail,
+	getAnalysisHistory,
 } from "@/features/feedback-groups/api";
 import { ConfirmDialog, Header, KebabMenu } from "@/shared/components";
-import { formatYearMonthDay } from "@/shared/utils/date";
-import { AnalysisCard } from "./_components/AnalysisCard";
+import { formatKoreanDate } from "@/shared/utils/date";
+import {
+	ActionPlanSection,
+	ComparisonSection,
+	FinalTypeSection,
+	InsightSection,
+	KeywordsSection,
+	SelfAwarenessCard,
+	SummarySection,
+	UsedFeedbackSection,
+} from "./_components/AnalysisSections";
 import { AnalysisStepView } from "./_components/AnalysisStepView";
-import { ComparisonTable } from "./_components/ComparisonTable";
-import { KeywordChart } from "./_components/KeywordChart";
-import { SelfAwarenessSection } from "./_components/SelfAwarenessSection";
+import {
+	ANALYSIS_PREVIEW_DATA,
+	getAnalysisGroupName,
+	toAnalysisViewModel,
+} from "./model";
 import { getErrorMessage } from "./utils";
 
-export function AnalysisDetailPage() {
+function scrollToPageTop() {
+	window.scrollTo({ top: 0, behavior: "instant" });
+}
+
+export function AnalysisDetailPage({ preview = false }: { preview?: boolean }) {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const { analysisId } = useParams<{ analysisId: string }>();
+	const [searchParams] = useSearchParams();
+	const isPreview = preview || analysisId === "preview";
 	const id = Number(analysisId);
-	const [showStep, setShowStep] = useState(() => !hasViewedAnalysis(id));
+	const isValidId = Number.isInteger(id) && id > 0;
+	const forceMode = import.meta.env.DEV ? searchParams.get("mode") : null;
+	const [showStep, setShowStep] = useState<boolean | null>(() => {
+		if (forceMode === "first") return true;
+		if (forceMode === "history" || isPreview) return false;
+		return null;
+	});
 	const [stepIndex, setStepIndex] = useState(0);
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-
-	const { data, isLoading, isError, error } = useQuery({
+	const detailQuery = useQuery({
 		queryKey: ["analysis-detail", id],
 		queryFn: () => getAnalysisDetail(id),
-		enabled: !Number.isNaN(id),
+		enabled: !isPreview && isValidId,
 	});
-
+	const rawData = isPreview ? ANALYSIS_PREVIEW_DATA : detailQuery.data;
+	const detailGroupName = rawData ? getAnalysisGroupName(rawData) : "";
+	const shouldFetchGroupFallback =
+		!isPreview && isValidId && Boolean(rawData) && !detailGroupName;
+	const historyQuery = useQuery({
+		queryKey: ["analysis-history"],
+		queryFn: getAnalysisHistory,
+		enabled: shouldFetchGroupFallback,
+	});
+	const historyGroupName = historyQuery.data?.analyses.find(
+		(item) => item.analysisId === id,
+	)?.group.title;
+	const fallbackGroupName =
+		historyGroupName ??
+		(historyQuery.isFetched || historyQuery.isError ? "피드백 그룹" : "");
+	const data = useMemo(
+		() => (rawData ? toAnalysisViewModel(rawData, fallbackGroupName) : null),
+		[fallbackGroupName, rawData],
+	);
 	const deleteAnalysisMutation = useMutation({
 		mutationFn: () => deleteFeedbackAnalysis(id),
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["analysis-history"] });
+		onSuccess: async () => {
+			queryClient.removeQueries({ queryKey: ["analysis-detail", id] });
+			await queryClient.invalidateQueries({ queryKey: ["analysis-history"] });
 			navigate("/analysis", { replace: true });
 		},
 	});
 
 	useEffect(() => {
-		if (data && showStep) {
-			markAnalysisViewed(id);
-		}
-	}, [data, id, showStep]);
+		if (!rawData || showStep !== null) return;
+		setShowStep(rawData.readAt == null && !hasViewedAnalysis(id));
+	}, [id, rawData, showStep]);
 
-	const headerTitle =
-		data && showStep ? (
-			<>
-				<span className="min-w-0 truncate">{data.group.name}</span>
-				<span className="shrink-0 whitespace-nowrap">피드백 분석</span>
-			</>
-		) : (
-			"피드백 분석 내역"
-		);
+	useEffect(() => {
+		if (showStep === true && !isPreview) markAnalysisViewed(id);
+	}, [id, isPreview, showStep]);
 
 	const handleBack = () => {
 		if (showStep && stepIndex > 0) {
-			setStepIndex((prev) => prev - 1);
-			return;
-		}
-		navigate(-1);
+			scrollToPageTop();
+			setStepIndex((value) => value - 1);
+		} else navigate(-1);
 	};
+	const isLoading =
+		!isPreview && (detailQuery.isLoading || historyQuery.isLoading);
+	const isError = !isPreview && (!isValidId || detailQuery.isError);
+	const isResolvingViewMode = data && showStep === null;
 
 	return (
-		<div className="bg-[#F8F8F8] min-h-screen">
+		<div className="min-h-screen bg-[#F8F8F8]">
 			<Header
-				title={headerTitle}
+				title={showStep === false ? "피드백 분석 내역" : "AI 분석 리포트"}
 				onBack={handleBack}
 				withBottomSpacing={false}
 				rightContent={
-					data ? (
+					!isPreview && data && showStep === false ? (
 						<KebabMenu
 							items={[
 								{
@@ -86,7 +123,6 @@ export function AnalysisDetailPage() {
 					) : undefined
 				}
 			/>
-
 			{isDeleteDialogOpen ? (
 				<ConfirmDialog
 					title="분석 결과를 삭제할까요?"
@@ -106,111 +142,116 @@ export function AnalysisDetailPage() {
 					onCancel={() => setIsDeleteDialogOpen(false)}
 				/>
 			) : null}
-
-			{isLoading ? (
-				<div className="flex items-center justify-center h-[calc(100svh-64px)]">
-					<div className="h-9 w-9 animate-spin rounded-full border-4 border-[#E8EBF0] border-t-[#0073FF]" />
-				</div>
+			{isLoading || isResolvingViewMode ? (
+				<Loading />
 			) : isError ? (
-				<div className="flex flex-col items-center justify-center h-[calc(100svh-64px)] gap-3 px-5 text-center">
-					<span className="text-[16px] font-medium text-red-500">
-						{error instanceof Error
-							? error.message
-							: "분석 결과를 불러오지 못했어요."}
-					</span>
-					<button
-						type="button"
-						onClick={() => navigate(-1)}
-						className="rounded-full border-none bg-[#0073FF] px-4 py-2 text-[14px] font-bold text-white"
-					>
-						돌아가기
-					</button>
-				</div>
+				<ErrorState
+					message={
+						!isValidId
+							? "유효한 분석 번호를 확인해주세요."
+							: detailQuery.error instanceof Error
+								? detailQuery.error.message
+								: "분석 결과를 불러오지 못했어요."
+					}
+					onBack={() => navigate(-1)}
+				/>
 			) : data ? (
 				showStep ? (
 					<AnalysisStepView
 						data={data}
 						stepIndex={stepIndex}
 						onStepIndexChange={setStepIndex}
-						onFinish={() => setShowStep(false)}
+						onFinish={() => {
+							setShowStep(false);
+						}}
 					/>
 				) : (
-					<AnalysisContent data={data} />
+					<AnalysisContent
+						data={data}
+						onShowFirst={() => {
+							scrollToPageTop();
+							setStepIndex(0);
+							setShowStep(true);
+						}}
+					/>
 				)
 			) : null}
 		</div>
 	);
 }
 
-function AnalysisContent({ data }: { data: AnalysisDetail }) {
+function AnalysisContent({
+	data,
+	onShowFirst,
+}: {
+	data: ReturnType<typeof toAnalysisViewModel>;
+	onShowFirst: () => void;
+}) {
 	const navigate = useNavigate();
-	const comparisonRows = data.selfOtherComparison?.rows ?? [];
-	const keywords = data.topKeywords ?? [];
-
 	return (
-		<>
-			<div className="flex flex-col items-center gap-2 pt-8 pb-4 px-5">
-				<h1 className="m-0 text-[30px] font-bold text-black text-center">
-					{data.group.name}
+		<main className="pb-10">
+			<div className="px-5 pb-7 pt-4 text-center">
+				<h1 className="m-0 text-[30px] font-bold text-[#14171C]">
+					{data.groupName}
 				</h1>
-				<p className="m-0 text-[14px] text-black/70 text-center">
-					{formatYearMonthDay(data.analyzedAt)}
+				<p className="mb-0 mt-2 text-[14px] text-black/70">
+					{formatKoreanDate(data.analyzedAt)}
 				</p>
 			</div>
-
-			<div className="flex flex-col gap-5 px-[18px] pb-8">
-				<AnalysisCard title="전체 피드백 요약">
-					<p className="m-0 text-[14px] text-black leading-relaxed">
-						{data.feedbackSummary}
-					</p>
-				</AnalysisCard>
-
-				{keywords.length > 0 && (
-					<AnalysisCard title="가장 많이 받은 키워드 Top 10">
-						<KeywordChart keywords={keywords} />
-					</AnalysisCard>
-				)}
-
-				<AnalysisCard title="분석 인사이트">
-					<p className="m-0 text-[14px] text-black leading-relaxed whitespace-pre-line">
-						{data.insight}
-					</p>
-				</AnalysisCard>
-
-				<AnalysisCard title="자기 인식 일치도">
-					<SelfAwarenessSection percentage={data.selfAwareness} />
-				</AnalysisCard>
-
-				{comparisonRows.length > 0 && (
-					<AnalysisCard title="나 vs 타인이 보는 나">
-						<ComparisonTable rows={comparisonRows} />
-					</AnalysisCard>
-				)}
-
-				{data.actionPlan && (
-					<AnalysisCard title="액션플랜">
-						<p className="m-0 text-[14px] text-black leading-relaxed whitespace-pre-line">
-							{data.actionPlan}
-						</p>
-					</AnalysisCard>
-				)}
-
-				<AnalysisCard title="전체 결과 분석">
-					<p className="m-0 text-[14px] text-black leading-relaxed">
-						{data.totalSummary}
-					</p>
-				</AnalysisCard>
+			<div className="flex flex-col gap-5 px-[18px]">
+				<SummarySection data={data} />
+				<KeywordsSection data={data} />
+				<InsightSection data={data} />
+				<SelfAwarenessCard data={data} />
+				<ComparisonSection data={data} />
+				<ActionPlanSection data={data} />
+				<FinalTypeSection data={data} />
+				{data.usedFeedbacks.length > 0 ? (
+					<UsedFeedbackSection
+						data={data}
+						onSelect={(feedbackId) =>
+							navigate(`/feedback/detail/${feedbackId}`)
+						}
+					/>
+				) : null}
 			</div>
-
-			<div className="px-5 pb-10">
+			<div className="px-5 pb-2 pt-8">
 				<button
 					type="button"
-					onClick={() => navigate(`/groups/${data.group.id}`)}
-					className="w-full py-[14px] rounded-[16px] bg-[#E5E7EB] text-[17px] font-medium text-[#111827] border-none cursor-pointer"
+					onClick={onShowFirst}
+					className="h-14 w-full rounded-2xl border border-[#D6E8FF] bg-white text-[16px] font-bold text-[#0073FF]"
 				>
-					피드백 보러 가기
+					페이지네이션 화면 다시 보기
 				</button>
 			</div>
-		</>
+		</main>
+	);
+}
+
+function Loading() {
+	return (
+		<div className="flex h-[calc(100svh-64px)] items-center justify-center">
+			<div className="h-9 w-9 animate-spin rounded-full border-4 border-[#E8EBF0] border-t-[#0073FF]" />
+		</div>
+	);
+}
+function ErrorState({
+	message,
+	onBack,
+}: {
+	message: string;
+	onBack: () => void;
+}) {
+	return (
+		<div className="flex h-[calc(100svh-64px)] flex-col items-center justify-center gap-3 px-5 text-center">
+			<span className="text-[16px] font-medium text-red-500">{message}</span>
+			<button
+				type="button"
+				onClick={onBack}
+				className="rounded-full border-none bg-[#0073FF] px-4 py-2 text-[14px] font-bold text-white"
+			>
+				돌아가기
+			</button>
+		</div>
 	);
 }
