@@ -4,6 +4,7 @@ import helperCharacter from "@/assets/analysis/HELPER.png";
 import pioneerCharacter from "@/assets/analysis/PIONEER.png";
 import reliableCharacter from "@/assets/analysis/RELIABLE.png";
 import thinkerCharacter from "@/assets/analysis/THINKER.png";
+import IcChevronRight from "@/assets/icons/ic_chevron_right.svg?react";
 import type { AnalysisViewModel } from "../model";
 import { ComparisonTable } from "./ComparisonTable";
 import { KeywordChart } from "./KeywordChart";
@@ -17,7 +18,10 @@ export function SummarySection({ data }: { data: AnalysisViewModel }) {
 			</p>
 			<div className="mt-7 flex flex-col gap-5">
 				{data.strengths.map((item, index) => (
-					<div key={item.title} className="flex items-center gap-4">
+					<div
+						key={`${item.title}-${item.description}`}
+						className="flex items-center gap-4"
+					>
 						<span className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl bg-[#EDF6FF] text-[14px] font-bold text-[#0073FF]">
 							{String(index + 1).padStart(2, "0")}
 						</span>
@@ -66,7 +70,7 @@ export function InsightSection({ data }: { data: AnalysisViewModel }) {
 			</div>
 			<div className="mt-5 flex flex-col gap-6">
 				{data.insights.map((item) => (
-					<div key={item.title}>
+					<div key={`${item.title}-${item.content}`}>
 						<p className="m-0 text-[13px] font-bold text-[#0073FF]">
 							{item.title}
 						</p>
@@ -119,14 +123,14 @@ export function ActionPlanSection({
 					const isLastAction = index === data.actions.length - 1;
 					return (
 						<li
-							key={action.title}
-							className={`flex gap-4 ${isLastAction && variant === "scroll" ? "h-[68px]" : "h-[91px]"}`}
+							key={`${action.title}-${action.description}`}
+							className={`flex gap-4 ${isLastAction ? "" : "mb-[14px]"}`}
 						>
 							<span className="flex h-[42px] w-[58px] shrink-0 items-center justify-center rounded-xl bg-[#EDF6FF] text-[12px] font-bold text-[#0073FF]">
 								습관 {String(index + 1).padStart(2, "0")}
 							</span>
 							<div
-								className={`h-[69px] min-w-0 flex-1 ${isLastAction ? "" : "border-b border-[#E3E8F0]"}`}
+								className={`min-h-[69px] min-w-0 flex-1 pb-[14px] ${isLastAction ? "" : "border-b border-[#E3E8F0]"}`}
 							>
 								<p className="m-0 text-[16px] font-bold text-[#14171C]">
 									{action.title}
@@ -172,7 +176,7 @@ export function FinalTypeSection({
 	const character = TYPE_CHARACTER[data.finalType.code];
 	if (variant === "reveal") {
 		return (
-			<section className="mx-auto h-[600px] w-full max-w-[362px] text-center">
+			<section className="mx-auto min-h-[600px] w-full max-w-[362px] text-center">
 				<CharacterVisual
 					character={character}
 					name={data.finalType.name}
@@ -184,9 +188,11 @@ export function FinalTypeSection({
 				<p className="mb-0 mt-[10px] text-[14px] text-[#616B7D]">
 					{data.finalType.description}
 				</p>
-				<div className="mx-auto mt-[22px] h-9 w-[240px] rounded-full bg-[#EBF5FF] px-5 text-[12px] font-semibold leading-9 text-[#0A66E5]">
-					{data.finalType.traits.join("   ·   ")}
-				</div>
+				{data.finalType.traits.length > 0 ? (
+					<div className="mx-auto mt-[22px] inline-flex min-h-9 max-w-full flex-wrap items-center justify-center rounded-full bg-[#EBF5FF] px-5 py-2 text-[12px] font-semibold leading-[1.4] text-[#0A66E5]">
+						{data.finalType.traits.join("   ·   ")}
+					</div>
+				) : null}
 				<div className="mt-6 text-left">
 					<RevealResultLine
 						number="01"
@@ -204,7 +210,7 @@ export function FinalTypeSection({
 	}
 
 	return (
-		<section className="h-[390px] overflow-hidden rounded-[24px] border border-[#EBEDF2] bg-white text-center">
+		<section className="min-h-[390px] rounded-[24px] border border-[#EBEDF2] bg-white pb-6 text-center">
 			<div className="mt-[15px]">
 				<CharacterVisual
 					character={character}
@@ -215,9 +221,11 @@ export function FinalTypeSection({
 			<h2 className="mb-0 mt-[26px] text-[24px] font-bold leading-normal text-[#0F141F]">
 				{data.finalType.name}
 			</h2>
-			<div className="mx-auto mt-[17px] h-[34px] w-[250px] rounded-full bg-[#EDF7FF] px-5 text-[12px] font-semibold leading-[34px] text-[#0A66E5]">
-				{data.finalType.traits.join(" · ")}
-			</div>
+			{data.finalType.traits.length > 0 ? (
+				<div className="mx-auto mt-[17px] inline-flex min-h-[34px] max-w-[calc(100%-40px)] flex-wrap items-center justify-center rounded-full bg-[#EDF7FF] px-5 py-2 text-[12px] font-semibold leading-[1.4] text-[#0A66E5]">
+					{data.finalType.traits.join(" · ")}
+				</div>
+			) : null}
 			<div className="mx-[23px] mt-5 grid grid-cols-2 border-t border-[#E5EBF0] pt-[18px] text-left">
 				<CardResultColumn label="강점" text={data.finalType.strength} />
 				<CardResultColumn
@@ -240,6 +248,7 @@ function CharacterVisual({
 	size: "large" | "small";
 }) {
 	const large = size === "large";
+	const imageSource = character || reliableCharacter;
 	return (
 		<div
 			className={`relative mx-auto ${large ? "h-[236px] w-[299px]" : "h-[130px] w-[165px]"}`}
@@ -248,7 +257,7 @@ function CharacterVisual({
 				className={`absolute bottom-0 left-1/2 -translate-x-1/2 rounded-full bg-black/15 blur-[5px] ${large ? "h-[18px] w-[150px]" : "h-[14px] w-[112px]"}`}
 			/>
 			<img
-				src={character}
+				src={imageSource}
 				alt={`${name} 캐릭터`}
 				className="absolute inset-0 h-full w-full object-contain"
 			/>
@@ -292,7 +301,7 @@ function CardResultColumn({
 	return (
 		<div className={className}>
 			<p className="m-0 text-[12px] font-bold text-[#0A73FF]">{label}</p>
-			<p className="mb-0 mt-[7px] line-clamp-2 text-[12px] leading-[18px] text-[#3B424F]">
+			<p className="mb-0 mt-[7px] break-words text-[12px] leading-[18px] text-[#3B424F]">
 				{text}
 			</p>
 		</div>
@@ -307,26 +316,48 @@ export function UsedFeedbackSection({
 	onSelect: (id: number) => void;
 }) {
 	return (
-		<Card title="분석에 사용한 피드백" badge={`${data.usedFeedbacks.length}개`}>
-			<div className="-mt-2 divide-y divide-[#E3E8F0]">
-				{data.usedFeedbacks.map((feedback) => (
-					<button
-						key={feedback.id}
-						type="button"
-						onClick={() => onSelect(feedback.id)}
-						className="flex h-16 w-full items-center justify-between border-0 bg-transparent px-0 text-left text-[15px] font-semibold text-[#14171C]"
-					>
-						{feedback.displayName}
-						<span
-							aria-hidden="true"
-							className="text-[22px] font-normal text-[#A1A9B2]"
-						>
-							›
-						</span>
-					</button>
-				))}
+		<section className="overflow-hidden rounded-[20px] bg-white px-[18px] pb-[18px] pt-[22px]">
+			<div className="flex min-h-[23px] items-center justify-between">
+				<h2 className="m-0 text-[17px] font-bold leading-[22px] text-black">
+					분석에 사용한 피드백
+				</h2>
+				<span className="rounded-[12px] bg-[#EDF0FF] px-[9px] py-1 text-[12px] font-bold leading-[15px] text-[#0073FF]">
+					{data.usedFeedbacks.length}개
+				</span>
 			</div>
-		</Card>
+			<div className="mt-[14px] h-px bg-[#E5E7EB]" />
+			{data.usedFeedbacks.length > 0 ? (
+				<ul className="m-0 list-none p-0">
+					{data.usedFeedbacks.map((feedback, index) => (
+						<li
+							key={feedback.id}
+							className="border-b border-[#E5E7EB] last:border-b-0"
+						>
+							<button
+								type="button"
+								onClick={() => onSelect(feedback.id)}
+								className="flex min-h-[72px] w-full items-center gap-[12px] border-0 bg-transparent px-0 py-3 text-left active:bg-[#F8FAFC]"
+							>
+								<span className="flex size-[36px] shrink-0 items-center justify-center rounded-full bg-[#EDF0FF] text-[13px] font-bold leading-[18px] text-[#0073FF]">
+									{index + 1}
+								</span>
+								<span className="min-w-0 flex-1 break-words text-[15px] font-bold leading-[20px] text-black">
+									{feedback.displayName}
+								</span>
+								<IcChevronRight
+									aria-hidden="true"
+									className="size-[20px] shrink-0"
+								/>
+							</button>
+						</li>
+					))}
+				</ul>
+			) : (
+				<p className="m-0 py-5 text-center text-[14px] text-[#6E737D]">
+					표시할 피드백이 없어요.
+				</p>
+			)}
+		</section>
 	);
 }
 

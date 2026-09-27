@@ -163,6 +163,7 @@ function getAnalysisHistoryItems(
 		href: `/analysis/ai/${item.analysisId}`,
 		statusLabel: item.status === "PROCESSING" ? "생성 중" : "완료",
 		statusTone: item.status === "PROCESSING" ? "blue" : "gray",
+		disabled: item.status !== "COMPLETED",
 	}));
 }
 

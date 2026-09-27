@@ -1,4 +1,4 @@
-import type { AnalysisSelfOtherRow } from "@/features/feedback-groups/api";
+import type { AnalysisComparisonRowView } from "../model";
 
 const LABEL_KO: Record<string, string> = {
 	Strengths: "주요 강점",
@@ -7,7 +7,7 @@ const LABEL_KO: Record<string, string> = {
 };
 
 interface ComparisonTableProps {
-	rows: AnalysisSelfOtherRow[];
+	rows: AnalysisComparisonRowView[];
 }
 
 export function ComparisonTable({ rows }: ComparisonTableProps) {

@@ -213,37 +213,82 @@ export async function deleteFeedbackAnalysis(analysisId: number) {
 	await apiClient.delete(`/feedback-groups/analysis/${analysisId}`);
 }
 
+export type AnalysisTypeCode =
+	| "HELPER"
+	| "ENERGIZER"
+	| "RELIABLE"
+	| "THINKER"
+	| "EXPLORER"
+	| "PIONEER";
+
+export type AnalysisStrength = {
+	title: string;
+	description: string;
+};
+
 export type AnalysisKeyword = {
-	rank: number;
-	keyword: string;
+	label: string;
 	count: number;
 };
 
-export type AnalysisSelfOtherRow = {
+export type AnalysisComparisonRow = {
 	label: string;
-	selfView: string[];
-	otherView: string[];
+	selfValues: string[];
+	othersValues: string[];
+};
+
+export type AnalysisAction = {
+	title: string;
+	description: string;
+};
+
+export type AnalysisInsight = {
+	title: string;
+	content: string;
+};
+
+export type AnalysisUsedFeedback = {
+	id: number;
+	reviewerName: string;
 };
 
 export type AnalysisDetail = {
-	id: number;
-	status: string;
-	readAt?: string | null;
-	group: {
-		id: number;
-		selfIntroductionId: number | null;
-		name: string;
+	analysisId: number;
+	feedbackGroupId: number;
+	feedbackGroupName: string;
+	status: "PROCESSING" | "COMPLETED" | "FAILED";
+	analyzedAt: string | null;
+	summaryAnalysis: {
+		pageTitle: string;
+		summary: string;
+		strengths: AnalysisStrength[];
+		growthSummary: string;
 	};
-	analyzedAt: string;
-	feedbackSummary: string;
-	topKeywords: AnalysisKeyword[] | null;
-	insight: string;
-	selfAwareness: number;
-	selfOtherComparison: {
-		rows: AnalysisSelfOtherRow[];
-	} | null;
-	actionPlan: string | null;
-	totalSummary: string;
+	keywordAnalysis: {
+		keywords: AnalysisKeyword[];
+	};
+	insightAnalysis: {
+		pageTitle: string;
+		insightSummary: string;
+		insights: AnalysisInsight[];
+	};
+	selfAwarenessAnalysis: {
+		selfAwarenessScore: number;
+		comparisonRows: AnalysisComparisonRow[];
+	};
+	actionPlan: {
+		actions: AnalysisAction[];
+		reviewGuide: string;
+	};
+	finalType: {
+		typeCode: AnalysisTypeCode;
+		typeName: string;
+		traits: string[];
+		strength: string;
+		growthPoint: string;
+	};
+	usedFeedbacks: AnalysisUsedFeedback[];
+	isRead: boolean;
 };
 
 export async function getAnalysisDetail(analysisId: number) {
