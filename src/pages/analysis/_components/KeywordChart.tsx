@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
 import type { AnalysisKeyword } from "@/features/feedback-groups/api";
+import { useStagedReveal } from "./useStagedReveal";
 
 interface KeywordChartProps {
 	keywords: AnalysisKeyword[];
@@ -10,30 +10,28 @@ export function KeywordChart({
 	keywords,
 	animated = false,
 }: KeywordChartProps) {
-	const maxCount = Math.max(...keywords.map((k) => k.count), 1);
-	const [filled, setFilled] = useState(!animated);
+	const maxCount = Math.max(...keywords.map((keyword) => keyword.count), 1);
+	const filled = useStagedReveal(animated);
 
-	useEffect(() => {
-		if (!animated) {
-			return;
-		}
-
-		setFilled(false);
-		const raf = requestAnimationFrame(() => {
-			requestAnimationFrame(() => setFilled(true));
-		});
-
-		return () => cancelAnimationFrame(raf);
-	}, [animated]);
+	if (keywords.length === 0) {
+		return (
+			<p className="m-0 py-4 text-center text-[14px] text-[#6E737D]">
+				표시할 키워드가 없어요.
+			</p>
+		);
+	}
 
 	return (
 		<div className="flex flex-col gap-[10px]">
 			{keywords.map((item, index) => (
-				<div key={item.rank} className="flex items-center gap-2">
-					<span className="text-[14px] text-black/70 w-20 text-right flex-shrink-0">
+				<div
+					key={`${item.rank}-${item.keyword}`}
+					className="flex items-center gap-2"
+				>
+					<span className="w-20 flex-shrink-0 text-right text-[14px] text-black/70">
 						{item.keyword}
 					</span>
-					<div className="flex-1 h-[21px] rounded-[4px] overflow-hidden bg-gray-100">
+					<div className="h-[21px] flex-1 overflow-hidden rounded-[4px] bg-gray-100">
 						<div
 							className="h-full rounded-[4px] transition-[width] duration-700 ease-out"
 							style={{
@@ -46,7 +44,7 @@ export function KeywordChart({
 							}}
 						/>
 					</div>
-					<span className="text-[14px] text-black/40 w-5 text-right flex-shrink-0">
+					<span className="w-5 flex-shrink-0 text-right text-[14px] text-black/40">
 						{item.count}
 					</span>
 				</div>
