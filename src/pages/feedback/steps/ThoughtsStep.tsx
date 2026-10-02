@@ -1,4 +1,5 @@
 import { useState } from "react";
+import IcCheck from "@/assets/feedback/check.svg?react";
 import { Button, Header, ProgressBar } from "@/shared/components";
 import { WritingGuideModal } from "../WritingGuideModal";
 
@@ -12,41 +13,34 @@ interface ThoughtsStepProps {
 	isSubmitting?: boolean;
 }
 
-function ChevronUp() {
-	return (
-		<svg width="30" height="30" viewBox="0 0 30 30" fill="none" aria-hidden="true">
-			<path d="M8 19L15 12L22 19" stroke="#0073FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-		</svg>
-	);
-}
-
-function ChevronDown() {
-	return (
-		<svg width="30" height="30" viewBox="0 0 30 30" fill="none" aria-hidden="true">
-			<path d="M8 12L15 19L22 12" stroke="#000000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-		</svg>
-	);
-}
-
 function autoResize(el: HTMLTextAreaElement) {
 	el.style.height = "auto";
 	el.style.height = `${el.scrollHeight}px`;
 }
 
-export function ThoughtsStep({ recipientName, experiences, thoughts, onChange, onBack, onSubmit, isSubmitting = false }: ThoughtsStepProps) {
-	const [expandedIndex, setExpandedIndex] = useState(0);
+export function ThoughtsStep({
+	recipientName,
+	experiences,
+	thoughts,
+	onChange,
+	onBack,
+	onSubmit,
+	isSubmitting = false,
+}: ThoughtsStepProps) {
+	const [currentIndex, setCurrentIndex] = useState(0);
 	const [isGuideOpen, setIsGuideOpen] = useState(false);
 
 	const filledExperiences = experiences.filter((e) => e.trim());
+	const currentExperience = filledExperiences[currentIndex] ?? "";
 
 	return (
-		<div className="min-h-screen flex flex-col bg-white text-left">
+		<div className="h-dvh flex flex-col bg-white text-left overflow-hidden">
 			<Header onBack={onBack} />
 			<div className="px-5">
 				<ProgressBar step={6} totalSteps={6} />
 			</div>
 
-			<div className="px-5 pt-[42px] flex-1">
+			<div className="px-5 pt-[42px] flex-1 min-h-0 overflow-y-auto">
 				<div className="flex flex-col gap-2">
 					<p className="text-[28px] font-semibold leading-[160%] tracking-[-0.02em] text-black m-0">
 						{recipientName} 님과 함께한
@@ -55,56 +49,66 @@ export function ThoughtsStep({ recipientName, experiences, thoughts, onChange, o
 					</p>
 					<p className="text-[16px] font-medium leading-[150%] text-[#71717A] m-0">
 						함께 했던 경험에 대한 생각을 작성해주세요.
+						<br />
+						개선할 점, 좋았던 점 모두 작성해주세요.
 					</p>
 				</div>
 
-				<div className="mt-6 flex flex-col gap-3">
-					{filledExperiences.map((exp, index) => {
-						const isExpanded = expandedIndex === index;
+				<div className="mt-6 flex items-center gap-2 overflow-x-auto">
+					{filledExperiences.map((_, index) => {
+						const isSelected = index === currentIndex;
+						const isAnswered = (thoughts[index] ?? "").trim().length > 0;
 						return (
-							// biome-ignore lint/suspicious/noArrayIndexKey: ordered list items
-							<div key={index} className="flex gap-[13px] px-1">
-								<button
-									type="button"
-									className="shrink-0 mt-0.5 self-start bg-transparent border-none cursor-pointer outline-none p-0"
-									onClick={() => setExpandedIndex(isExpanded ? -1 : index)}
-								>
-									{isExpanded ? <ChevronUp /> : <ChevronDown />}
-								</button>
-								<div className="flex-1">
-									<p
-										className={`text-[16px] font-medium leading-[150%] m-0 ${isExpanded ? "text-[#0073FF]" : "text-black"}`}
-									>
-										{exp}
-									</p>
-									{isExpanded && (
-										<div className="flex flex-col mt-2">
-											<textarea
-												ref={(el) => { if (el) autoResize(el); }}
-												value={thoughts[index] ?? ""}
-												onChange={(e) => {
-													onChange(index, e.target.value);
-													autoResize(e.target);
-												}}
-												placeholder="나의 생각 작성하기"
-												rows={1}
-												className="w-full resize-none overflow-hidden text-[16px] font-medium leading-[150%] text-black placeholder:text-[#D9D9D9] bg-transparent outline-none border-none"
-												style={{ height: "auto" }}
-											/>
-											<div className="h-[2px] bg-[#D9D9D9]" />
-											<div className="flex justify-end mt-1">
-												<span className="text-[12px] text-[#A1A9B2]">{(thoughts[index] ?? "").length}자</span>
-											</div>
-										</div>
-									)}
-								</div>
-							</div>
+							<button
+								// biome-ignore lint/suspicious/noArrayIndexKey: ordered pagination items
+								key={index}
+								type="button"
+								onClick={() => setCurrentIndex(index)}
+								className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-bold border cursor-pointer outline-none ${
+									isSelected
+										? "bg-[#F2F8FF] border-[#F2F8FF] text-[#007AFF]"
+										: isAnswered
+											? "bg-white border-[#007AFF] text-[#007AFF]"
+											: "bg-white border-[#D8D8D8] text-[#B0B0B0]"
+								}`}
+							>
+								{isAnswered ? <IcCheck width={14} height={14} /> : index + 1}
+							</button>
 						);
 					})}
 				</div>
+
+				<p className="mt-4 text-[13px] text-[#ABABAB] m-0">
+					<span className="font-bold">{currentIndex + 1}</span>
+					<span className="font-semibold">번째 경험</span>
+				</p>
+				<p className="mt-2 text-[14px] leading-[21px] text-[#1C1C1E] m-0">
+					{currentExperience}
+				</p>
+
+				<div className="mt-4 h-px bg-[#EFEFEF]" />
+
+				<p className="mt-4 text-[12px] font-semibold text-[#ABABAB] m-0">
+					그때 든 생각
+				</p>
+				<textarea
+					key={currentIndex}
+					ref={(el) => {
+						if (el) autoResize(el);
+					}}
+					value={thoughts[currentIndex] ?? ""}
+					onChange={(e) => {
+						onChange(currentIndex, e.target.value);
+						autoResize(e.target);
+					}}
+					placeholder="그때 어떤 생각이나 느낌이 들었나요?"
+					rows={1}
+					className="mt-2 w-full resize-none overflow-hidden text-[16px] font-medium leading-[150%] text-black placeholder:text-[#71717A] bg-transparent outline-none border-none"
+					style={{ height: "auto" }}
+				/>
 			</div>
 
-			<div className="px-5 pb-8 flex flex-col gap-2">
+			<div className="px-5 pb-8 flex flex-col gap-2 shrink-0">
 				<button
 					type="button"
 					onClick={() => setIsGuideOpen(true)}
@@ -114,12 +118,20 @@ export function ThoughtsStep({ recipientName, experiences, thoughts, onChange, o
 				</button>
 				<Button
 					onClick={onSubmit}
-					disabled={isSubmitting || !filledExperiences.every((_, index) => thoughts[index]?.trim().length > 0)}
+					disabled={
+						isSubmitting ||
+						!filledExperiences.every(
+							(_, index) => thoughts[index]?.trim().length > 0,
+						)
+					}
 				>
 					전송
 				</Button>
 			</div>
-			<WritingGuideModal isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} />
+			<WritingGuideModal
+				isOpen={isGuideOpen}
+				onClose={() => setIsGuideOpen(false)}
+			/>
 		</div>
 	);
 }
