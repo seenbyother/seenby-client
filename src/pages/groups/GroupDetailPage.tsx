@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+	type InfiniteData,
+	useInfiniteQuery,
+	useMutation,
+	useQueryClient,
+} from "@tanstack/react-query";
 import { useEffect, useId, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import kakaoIcon from "@/assets/kakao.svg";
@@ -17,6 +22,7 @@ import {
 } from "@/pages/feedback-group/constants";
 import { ApiError } from "@/shared/api";
 import { ActionMenu, ConfirmDialog, Header } from "@/shared/components";
+import { useInfiniteScrollSentinel } from "@/shared/hooks/useInfiniteScrollSentinel";
 import { shareToKakaoWithTemplate } from "@/shared/lib/kakao";
 import { formatYearMonth, formatYearMonthDay } from "@/shared/utils/date";
 import { FeedbackCard, type FeedbackItem } from "./_components/FeedbackCard";
@@ -26,6 +32,19 @@ import { getErrorMessage } from "./utils";
 type FilterTab = "전체" | "회고 미완료" | "회고 완료";
 
 const FILTER_TABS: FilterTab[] = ["전체", "회고 미완료", "회고 완료"];
+const ANSWER_PAGE_SIZE = 10;
+
+function updateGroupDetailPages(
+	current: InfiniteData<FeedbackGroupDetail> | undefined,
+	updater: (page: FeedbackGroupDetail) => FeedbackGroupDetail,
+) {
+	if (!current) return current;
+
+	return {
+		...current,
+		pages: current.pages.map(updater),
+	};
+}
 
 function toFeedbackItem(
 	answer: FeedbackGroupDetail["answers"][number],
@@ -67,15 +86,29 @@ export function GroupDetailPage() {
 	const isValidGroupId = Number.isInteger(id) && id > 0;
 
 	const {
-		data: group,
+		data: groupPages,
 		error,
 		isError,
 		isLoading,
 		refetch,
-	} = useQuery({
+		fetchNextPage,
+		hasNextPage,
+		isFetchingNextPage,
+	} = useInfiniteQuery({
 		queryKey: ["feedback-group", id],
-		queryFn: () => getFeedbackGroupDetail(id),
+		queryFn: ({ pageParam }) =>
+			getFeedbackGroupDetail(id, { page: pageParam, size: ANSWER_PAGE_SIZE }),
+		initialPageParam: 0,
+		getNextPageParam: (lastPage) =>
+			lastPage.answerHasNext ? lastPage.answerPage + 1 : undefined,
 		enabled: isValidGroupId,
+	});
+	const group = groupPages?.pages[0];
+	const answers = groupPages?.pages.flatMap((page) => page.answers) ?? [];
+	const sentinelRef = useInfiniteScrollSentinel({
+		hasNextPage: hasNextPage ?? false,
+		isFetchingNextPage,
+		onLoadMore: () => fetchNextPage(),
 	});
 
 	const linkActiveMutation = useMutation({
@@ -85,41 +118,41 @@ export function GroupDetailPage() {
 			await queryClient.cancelQueries({ queryKey: ["feedback-group", id] });
 			await queryClient.cancelQueries({ queryKey: ["feedback-groups"] });
 
-			const previousGroup = queryClient.getQueryData<FeedbackGroupDetail>([
-				"feedback-group",
-				id,
-			]);
-			const previousGroups = queryClient.getQueryData<FeedbackGroupsResponse>([
-				"feedback-groups",
-			]);
+			const previousGroup = queryClient.getQueryData<
+				InfiniteData<FeedbackGroupDetail>
+			>(["feedback-group", id]);
+			const previousGroups = queryClient.getQueryData<
+				InfiniteData<FeedbackGroupsResponse>
+			>(["feedback-groups"]);
 			const optimisticEndDate = linkActive ? null : new Date().toISOString();
 
-			queryClient.setQueryData<FeedbackGroupDetail>(
+			queryClient.setQueryData<InfiniteData<FeedbackGroupDetail>>(
 				["feedback-group", id],
 				(current) =>
-					current
-						? {
-								...current,
-								linkActive,
-								endDate: optimisticEndDate,
-							}
-						: current,
+					updateGroupDetailPages(current, (page) => ({
+						...page,
+						linkActive,
+						endDate: optimisticEndDate,
+					})),
 			);
-			queryClient.setQueryData<FeedbackGroupsResponse>(
+			queryClient.setQueryData<InfiniteData<FeedbackGroupsResponse>>(
 				["feedback-groups"],
 				(current) =>
 					current
 						? {
 								...current,
-								groups: current.groups.map((item) =>
-									item.id === id
-										? {
-												...item,
-												linkActive,
-												endDate: optimisticEndDate,
-											}
-										: item,
-								),
+								pages: current.pages.map((page) => ({
+									...page,
+									groups: page.groups.map((item) =>
+										item.id === id
+											? {
+													...item,
+													linkActive,
+													endDate: optimisticEndDate,
+												}
+											: item,
+									),
+								})),
 							}
 						: current,
 			);
@@ -127,27 +160,28 @@ export function GroupDetailPage() {
 			return { previousGroup, previousGroups };
 		},
 		onSuccess: (updatedGroup) => {
-			queryClient.setQueryData<FeedbackGroupDetail>(
+			queryClient.setQueryData<InfiniteData<FeedbackGroupDetail>>(
 				["feedback-group", id],
 				(current) =>
-					current
-						? {
-								...current,
-								linkActive: updatedGroup.linkActive,
-								endDate: updatedGroup.endDate,
-								updatedAt: updatedGroup.updatedAt,
-							}
-						: current,
+					updateGroupDetailPages(current, (page) => ({
+						...page,
+						linkActive: updatedGroup.linkActive,
+						endDate: updatedGroup.endDate,
+						updatedAt: updatedGroup.updatedAt,
+					})),
 			);
-			queryClient.setQueryData<FeedbackGroupsResponse>(
+			queryClient.setQueryData<InfiniteData<FeedbackGroupsResponse>>(
 				["feedback-groups"],
 				(current) =>
 					current
 						? {
 								...current,
-								groups: current.groups.map((item) =>
-									item.id === updatedGroup.id ? updatedGroup : item,
-								),
+								pages: current.pages.map((page) => ({
+									...page,
+									groups: page.groups.map((item) =>
+										item.id === updatedGroup.id ? updatedGroup : item,
+									),
+								})),
 							}
 						: current,
 			);
@@ -170,17 +204,15 @@ export function GroupDetailPage() {
 			contextType: string;
 		}) => updateFeedbackGroup(id, body),
 		onSuccess: async (_updatedGroup, body) => {
-			queryClient.setQueryData<FeedbackGroupDetail>(
+			queryClient.setQueryData<InfiniteData<FeedbackGroupDetail>>(
 				["feedback-group", id],
 				(current) =>
-					current
-						? {
-								...current,
-								name: body.name,
-								relationshipType: body.relationshipType,
-								contextType: body.contextType,
-							}
-						: current,
+					updateGroupDetailPages(current, (page) => ({
+						...page,
+						name: body.name,
+						relationshipType: body.relationshipType,
+						contextType: body.contextType,
+					})),
 			);
 			await queryClient.invalidateQueries({ queryKey: ["feedback-groups"] });
 			setIsEditDialogOpen(false);
@@ -199,7 +231,6 @@ export function GroupDetailPage() {
 		},
 	});
 
-	const answers = group?.answers ?? [];
 	const filteredAnswers =
 		activeTab === "전체"
 			? answers
@@ -210,7 +241,8 @@ export function GroupDetailPage() {
 				);
 	const isAiAvailable =
 		!group?.linkActive &&
-		answers.length >= 3 &&
+		!hasNextPage &&
+		(group?.answerCount ?? 0) >= 3 &&
 		answers.every((answer) => answer.retrospectiveCompleted);
 
 	const copyFeedbackLink = async () => {
@@ -281,8 +313,11 @@ export function GroupDetailPage() {
 								label: "그룹 정보 수정",
 								onSelect: () => {
 									const cachedGroup = queryClient
-										.getQueryData<FeedbackGroupsResponse>(["feedback-groups"])
-										?.groups.find((item) => item.id === id);
+										.getQueryData<InfiniteData<FeedbackGroupsResponse>>([
+											"feedback-groups",
+										])
+										?.pages.flatMap((page) => page.groups)
+										.find((item) => item.id === id);
 									updateGroupMutation.reset();
 									setEditedGroupName(group.name);
 									setEditedRelationshipType(
@@ -408,6 +443,14 @@ export function GroupDetailPage() {
 								onClick={() => navigate(`/feedback/detail/${answer.id}`)}
 							/>
 						))}
+						<div ref={sentinelRef} />
+						{isFetchingNextPage ? (
+							<div className="flex items-center justify-center py-4">
+								<span className="text-[14px] text-black/50">
+									불러오는 중...
+								</span>
+							</div>
+						) : null}
 					</div>
 				)}
 			</main>
