@@ -139,7 +139,7 @@ export function CoverLetterDetailPage() {
 							label: "다시 생성하기",
 							onSelect: () =>
 								navigate(
-									`/groups/${coverLetter.feedbackGroupId}/analysis?mode=cover-letter-regenerate&coverLetterId=${id}`,
+									`/groups/${coverLetter.feedbackGroupId}/analysis?mode=cover-letter-create-another`,
 								),
 						},
 						{
