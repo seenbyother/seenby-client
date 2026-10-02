@@ -228,6 +228,7 @@ export type AnalysisSelfOtherRow = {
 export type AnalysisDetail = {
 	id: number;
 	status: string;
+	readAt?: string | null;
 	group: {
 		id: number;
 		selfIntroductionId: number | null;
