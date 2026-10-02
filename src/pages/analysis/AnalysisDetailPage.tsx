@@ -1,6 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router";
+import { useEffect, useState } from "react";
+import {
+	useLocation,
+	useNavigate,
+	useParams,
+	useSearchParams,
+} from "react-router";
 import {
 	hasViewedAnalysis,
 	markAnalysisViewed,
@@ -8,9 +13,8 @@ import {
 import {
 	deleteFeedbackAnalysis,
 	getAnalysisDetail,
-	getAnalysisHistory,
 } from "@/features/feedback-groups/api";
-import { ConfirmDialog, Header, KebabMenu } from "@/shared/components";
+import { ActionMenu, ConfirmDialog, Header } from "@/shared/components";
 import { formatKoreanDate } from "@/shared/utils/date";
 import {
 	ActionPlanSection,
@@ -23,19 +27,46 @@ import {
 	UsedFeedbackSection,
 } from "./_components/AnalysisSections";
 import { AnalysisStepView } from "./_components/AnalysisStepView";
-import {
-	ANALYSIS_PREVIEW_DATA,
-	getAnalysisGroupName,
-	toAnalysisViewModel,
-} from "./model";
+import { ANALYSIS_PREVIEW_DATA, toAnalysisViewModel } from "./model";
 import { getErrorMessage } from "./utils";
 
 function scrollToPageTop() {
 	window.scrollTo({ top: 0, behavior: "instant" });
 }
 
+type AnalysisViewReturnState = {
+	analysisId: number;
+	stepIndex: number;
+};
+
+function getAnalysisViewReturnState(
+	state: unknown,
+): AnalysisViewReturnState | null {
+	if (!state || typeof state !== "object" || !("analysisViewReturn" in state)) {
+		return null;
+	}
+
+	const value = state.analysisViewReturn;
+	if (!value || typeof value !== "object") return null;
+	if (!("analysisId" in value) || !("stepIndex" in value)) return null;
+	if (
+		typeof value.analysisId !== "number" ||
+		typeof value.stepIndex !== "number" ||
+		!Number.isInteger(value.stepIndex) ||
+		value.stepIndex < 0
+	) {
+		return null;
+	}
+
+	return {
+		analysisId: value.analysisId,
+		stepIndex: value.stepIndex,
+	};
+}
+
 export function AnalysisDetailPage({ preview = false }: { preview?: boolean }) {
 	const navigate = useNavigate();
+	const location = useLocation();
 	const queryClient = useQueryClient();
 	const { analysisId } = useParams<{ analysisId: string }>();
 	const [searchParams] = useSearchParams();
@@ -43,12 +74,19 @@ export function AnalysisDetailPage({ preview = false }: { preview?: boolean }) {
 	const id = Number(analysisId);
 	const isValidId = Number.isInteger(id) && id > 0;
 	const forceMode = import.meta.env.DEV ? searchParams.get("mode") : null;
-	const [showStep, setShowStep] = useState<boolean | null>(() => {
+	const [analysisViewReturn] = useState(() =>
+		getAnalysisViewReturnState(location.state),
+	);
+	const shouldRestoreAnalysisView = analysisViewReturn?.analysisId === id;
+	const [isFirstReadView, setIsFirstReadView] = useState<boolean | null>(() => {
+		if (shouldRestoreAnalysisView) return true;
 		if (forceMode === "first") return true;
 		if (forceMode === "history" || isPreview) return false;
 		return null;
 	});
-	const [stepIndex, setStepIndex] = useState(0);
+	const [stepIndex, setStepIndex] = useState(
+		shouldRestoreAnalysisView ? analysisViewReturn.stepIndex : 0,
+	);
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 	const detailQuery = useQuery({
 		queryKey: ["analysis-detail", id],
@@ -56,24 +94,7 @@ export function AnalysisDetailPage({ preview = false }: { preview?: boolean }) {
 		enabled: !isPreview && isValidId,
 	});
 	const rawData = isPreview ? ANALYSIS_PREVIEW_DATA : detailQuery.data;
-	const detailGroupName = rawData ? getAnalysisGroupName(rawData) : "";
-	const shouldFetchGroupFallback =
-		!isPreview && isValidId && Boolean(rawData) && !detailGroupName;
-	const historyQuery = useQuery({
-		queryKey: ["analysis-history"],
-		queryFn: getAnalysisHistory,
-		enabled: shouldFetchGroupFallback,
-	});
-	const historyGroupName = historyQuery.data?.analyses.find(
-		(item) => item.analysisId === id,
-	)?.group.title;
-	const fallbackGroupName =
-		historyGroupName ??
-		(historyQuery.isFetched || historyQuery.isError ? "피드백 그룹" : "");
-	const data = useMemo(
-		() => (rawData ? toAnalysisViewModel(rawData, fallbackGroupName) : null),
-		[fallbackGroupName, rawData],
-	);
+	const data = rawData ? toAnalysisViewModel(rawData) : null;
 	const deleteAnalysisMutation = useMutation({
 		mutationFn: () => deleteFeedbackAnalysis(id),
 		onSuccess: async () => {
@@ -84,39 +105,79 @@ export function AnalysisDetailPage({ preview = false }: { preview?: boolean }) {
 	});
 
 	useEffect(() => {
-		if (!rawData || showStep !== null) return;
-		setShowStep(rawData.readAt == null && !hasViewedAnalysis(id));
-	}, [id, rawData, showStep]);
+		if (!rawData || isFirstReadView !== null) return;
+		setIsFirstReadView(rawData.isRead === false && !hasViewedAnalysis(id));
+	}, [id, isFirstReadView, rawData]);
 
 	useEffect(() => {
-		if (showStep === true && !isPreview) markAnalysisViewed(id);
-	}, [id, isPreview, showStep]);
+		if (!shouldRestoreAnalysisView) return;
+		navigate(`${location.pathname}${location.search}`, {
+			replace: true,
+			state: null,
+		});
+	}, [location.pathname, location.search, navigate, shouldRestoreAnalysisView]);
 
-	const handleBack = () => {
-		if (showStep && stepIndex > 0) {
-			scrollToPageTop();
-			setStepIndex((value) => value - 1);
-		} else navigate(-1);
+	const maxStepIndex = data?.steps.length ?? 0;
+	const safeStepIndex = Math.min(stepIndex, maxStepIndex);
+	const completeFirstRead = () => {
+		if (!isPreview) markAnalysisViewed(id);
 	};
-	const isLoading =
-		!isPreview && (detailQuery.isLoading || historyQuery.isLoading);
+	const handleBack = () => {
+		if (isFirstReadView && safeStepIndex > 0) {
+			scrollToPageTop();
+			setStepIndex(safeStepIndex - 1);
+			return;
+		}
+
+		if (isFirstReadView) completeFirstRead();
+		navigate(-1);
+	};
+	const handleExit = () => {
+		completeFirstRead();
+		navigate("/analysis", { replace: true });
+	};
+	const isLoading = !isPreview && detailQuery.isLoading;
 	const isError = !isPreview && (!isValidId || detailQuery.isError);
-	const isResolvingViewMode = data && showStep === null;
+	const isResolvingViewMode = Boolean(data && isFirstReadView === null);
+	const handleStepFeedbackSelect = (feedbackId: number) => {
+		navigate(`${location.pathname}${location.search}`, {
+			replace: true,
+			state: {
+				analysisViewReturn: {
+					analysisId: id,
+					stepIndex: safeStepIndex,
+				},
+			},
+			flushSync: true,
+		});
+		navigate(`/feedback/detail/${feedbackId}`);
+	};
 
 	return (
 		<div className="min-h-screen bg-[#F8F8F8]">
 			<Header
-				title={showStep === false ? "피드백 분석 내역" : "AI 분석 리포트"}
+				title={
+					isFirstReadView === false ? "피드백 분석 내역" : "AI 분석 리포트"
+				}
 				onBack={handleBack}
 				withBottomSpacing={false}
 				rightContent={
-					!isPreview && data && showStep === false ? (
-						<KebabMenu
+					data && isFirstReadView === true ? (
+						<ExitAnalysisButton onClick={handleExit} />
+					) : data && !isPreview && isFirstReadView === false ? (
+						<ActionMenu
 							items={[
+								{
+									label: "다시 생성하기",
+									onSelect: () =>
+										navigate(
+											`/groups/${data.groupId}/analysis?mode=analysis-regenerate&analysisId=${id}`,
+										),
+								},
 								{
 									label: "삭제하기",
 									destructive: true,
-									onClick: () => setIsDeleteDialogOpen(true),
+									onSelect: () => setIsDeleteDialogOpen(true),
 								},
 							]}
 						/>
@@ -156,24 +217,15 @@ export function AnalysisDetailPage({ preview = false }: { preview?: boolean }) {
 					onBack={() => navigate(-1)}
 				/>
 			) : data ? (
-				showStep ? (
+				isFirstReadView ? (
 					<AnalysisStepView
 						data={data}
-						stepIndex={stepIndex}
+						stepIndex={safeStepIndex}
 						onStepIndexChange={setStepIndex}
-						onFinish={() => {
-							setShowStep(false);
-						}}
+						onSelectFeedback={handleStepFeedbackSelect}
 					/>
 				) : (
-					<AnalysisContent
-						data={data}
-						onShowFirst={() => {
-							scrollToPageTop();
-							setStepIndex(0);
-							setShowStep(true);
-						}}
-					/>
+					<AnalysisContent data={data} />
 				)
 			) : null}
 		</div>
@@ -182,15 +234,13 @@ export function AnalysisDetailPage({ preview = false }: { preview?: boolean }) {
 
 function AnalysisContent({
 	data,
-	onShowFirst,
 }: {
 	data: ReturnType<typeof toAnalysisViewModel>;
-	onShowFirst: () => void;
 }) {
 	const navigate = useNavigate();
 	return (
-		<main className="pb-10">
-			<div className="px-5 pb-7 pt-4 text-center">
+		<main className="pb-10 [overflow-wrap:anywhere]">
+			<div className="px-5 pb-7 pt-0 text-center">
 				<h1 className="m-0 text-[30px] font-bold text-[#14171C]">
 					{data.groupName}
 				</h1>
@@ -215,16 +265,20 @@ function AnalysisContent({
 					/>
 				) : null}
 			</div>
-			<div className="px-5 pb-2 pt-8">
-				<button
-					type="button"
-					onClick={onShowFirst}
-					className="h-14 w-full rounded-2xl border border-[#D6E8FF] bg-white text-[16px] font-bold text-[#0073FF]"
-				>
-					페이지네이션 화면 다시 보기
-				</button>
-			</div>
 		</main>
+	);
+}
+
+function ExitAnalysisButton({ onClick }: { onClick: () => void }) {
+	return (
+		<button
+			type="button"
+			onClick={onClick}
+			aria-label="AI 분석 나가기"
+			className="h-8 rounded-[10px] border-0 bg-[#EAF4FF] px-3 text-[12px] font-bold text-[#0073FF] active:bg-[#DCEEFF]"
+		>
+			나가기
+		</button>
 	);
 }
 

@@ -1,8 +1,8 @@
-import type { AnalysisKeyword } from "@/features/feedback-groups/api";
+import type { AnalysisKeywordView } from "../model";
 import { useStagedReveal } from "./useStagedReveal";
 
 interface KeywordChartProps {
-	keywords: AnalysisKeyword[];
+	keywords: AnalysisKeywordView[];
 	animated?: boolean;
 }
 
