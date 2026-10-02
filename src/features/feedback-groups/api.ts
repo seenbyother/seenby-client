@@ -23,6 +23,15 @@ export type FeedbackGroup = {
 export type FeedbackGroupsResponse = {
 	groupCount: number;
 	groups: FeedbackGroup[];
+	page: number;
+	size: number;
+	totalPages: number;
+	hasNext: boolean;
+};
+
+export type PageQuery = {
+	page?: number;
+	size?: number;
 };
 
 export type FeedbackAnswerSummary = {
@@ -44,24 +53,32 @@ export type FeedbackGroupDetail = {
 	linkActive: boolean;
 	endDate: string | null;
 	answers: FeedbackAnswerSummary[];
+	answerCount: number;
+	answerPage: number;
+	answerSize: number;
+	answerTotalPages: number;
+	answerHasNext: boolean;
 	aiAnalysisStatus: string | null;
 	coverLetterStatus: string | null;
 	createdAt: string;
 	updatedAt: string;
 };
 
-export async function getFeedbackGroups() {
+export async function getFeedbackGroups(query: PageQuery = {}) {
 	const response = await apiClient.get<
 		ApiResponse<FeedbackGroupsResponse> | FeedbackGroupsResponse
-	>("/feedback-groups");
+	>("/feedback-groups", { query });
 
 	return unwrapApiData(response);
 }
 
-export async function getFeedbackGroupDetail(groupId: number) {
+export async function getFeedbackGroupDetail(
+	groupId: number,
+	query: PageQuery = {},
+) {
 	const response = await apiClient.get<
 		ApiResponse<FeedbackGroupDetail> | FeedbackGroupDetail
-	>(`/feedback-groups/${groupId}`);
+	>(`/feedback-groups/${groupId}`, { query });
 
 	return unwrapApiData(response);
 }
@@ -199,12 +216,17 @@ export type AnalysisHistoryItem = {
 
 export type AnalysisHistoryResponse = {
 	analyses: AnalysisHistoryItem[];
+	analysisCount: number;
+	page: number;
+	size: number;
+	totalPages: number;
+	hasNext: boolean;
 };
 
-export async function getAnalysisHistory() {
+export async function getAnalysisHistory(query: PageQuery = {}) {
 	const response = await apiClient.get<
 		ApiResponse<AnalysisHistoryResponse> | AnalysisHistoryResponse
-	>("/feedback-groups/analysis");
+	>("/feedback-groups/analysis", { query });
 
 	return unwrapApiData(response);
 }
