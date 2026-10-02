@@ -5,6 +5,7 @@ import IcPlus from "@/assets/icons/ic_plus.svg?react";
 import { getFeedbackGroups } from "@/features/feedback-groups/api";
 import { BottomNavigation, Header } from "@/shared/components";
 import { useInfiniteScrollSentinel } from "@/shared/hooks/useInfiniteScrollSentinel";
+import { FloatingActionButton } from "./_components/FloatingActionButton";
 import { GroupCard } from "./_components/GroupCard";
 import { getErrorMessage } from "./utils";
 
@@ -116,20 +117,13 @@ export function GroupsPage() {
 				)}
 			</main>
 
-			{/* FAB */}
-			<div className="absolute bottom-30 right-5">
-				<button
-					type="button"
-					onClick={() => navigate("/feedback-group/create")}
-					className="flex items-center gap-2.5 px-5 py-4 rounded-[60px] bg-[#0073FF] border-none cursor-pointer"
-					style={{ boxShadow: "0px 0px 3.1px 1px rgba(0,0,0,0.25)" }}
-				>
-					<IcPlus />
-					<span className="text-[16px] font-medium text-[#EDF0FF]">
-						피드백 집단 추가
-					</span>
-				</button>
-			</div>
+			<FloatingActionButton
+				onClick={() => navigate("/feedback-group/create")}
+				bottomClassName="bottom-30"
+			>
+				<IcPlus />
+				피드백 집단 추가
+			</FloatingActionButton>
 
 			<BottomNavigation activeTab="feedback" />
 		</div>
