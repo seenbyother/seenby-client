@@ -1,24 +1,44 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import IcPlus from "@/assets/icons/ic_plus.svg?react";
 import { getFeedbackGroups } from "@/features/feedback-groups/api";
 import { BottomNavigation, Header } from "@/shared/components";
+import { useInfiniteScrollSentinel } from "@/shared/hooks/useInfiniteScrollSentinel";
 import { GroupCard } from "./_components/GroupCard";
 import { getErrorMessage } from "./utils";
 
 type FilterTab = "전체" | "진행중" | "종료";
 
 const FILTER_TABS: FilterTab[] = ["전체", "진행중", "종료"];
+const PAGE_SIZE = 10;
 
 export function GroupsPage() {
 	const navigate = useNavigate();
 	const [activeTab, setActiveTab] = useState<FilterTab>("전체");
-	const { data, error, isError, isLoading, refetch } = useQuery({
+	const {
+		data,
+		error,
+		isError,
+		isLoading,
+		refetch,
+		fetchNextPage,
+		hasNextPage,
+		isFetchingNextPage,
+	} = useInfiniteQuery({
 		queryKey: ["feedback-groups"],
-		queryFn: getFeedbackGroups,
+		queryFn: ({ pageParam }) =>
+			getFeedbackGroups({ page: pageParam, size: PAGE_SIZE }),
+		initialPageParam: 0,
+		getNextPageParam: (lastPage) =>
+			lastPage.hasNext ? lastPage.page + 1 : undefined,
 	});
-	const groups = data?.groups ?? [];
+	const groups = data?.pages.flatMap((page) => page.groups) ?? [];
+	const sentinelRef = useInfiniteScrollSentinel({
+		hasNextPage: hasNextPage ?? false,
+		isFetchingNextPage,
+		onLoadMore: () => fetchNextPage(),
+	});
 
 	const filteredGroups =
 		activeTab === "전체"
@@ -84,6 +104,14 @@ export function GroupsPage() {
 								onClick={() => navigate(`/groups/${group.id}`)}
 							/>
 						))}
+						<div ref={sentinelRef} />
+						{isFetchingNextPage ? (
+							<div className="flex items-center justify-center py-4">
+								<span className="text-[14px] text-black/50">
+									불러오는 중...
+								</span>
+							</div>
+						) : null}
 					</div>
 				)}
 			</main>
