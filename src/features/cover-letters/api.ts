@@ -3,7 +3,6 @@ import {
 	apiClient,
 	ensureApiSuccess,
 	unwrapApiData,
-	unwrapOptionalApiData,
 } from "@/shared/api";
 
 export type CoverLetterDetail = {
@@ -65,29 +64,6 @@ export async function getCoverLetterDetail(coverLetterId: number) {
 	>(`/cover-letters/${coverLetterId}`);
 
 	return unwrapApiData(response);
-}
-
-export type CoverLetterRegenerationResult = {
-	id: number;
-	status: "PROCESSING" | "COMPLETED" | "FAILED";
-};
-
-export type RegenerateCoverLetterRequest = {
-	answerIds: number[];
-	selfKeywords: string[];
-};
-
-export async function regenerateCoverLetter(
-	coverLetterId: number,
-	body: RegenerateCoverLetterRequest,
-) {
-	const response = await apiClient.post<
-		| ApiResponse<CoverLetterRegenerationResult>
-		| CoverLetterRegenerationResult
-		| undefined
-	>(`/cover-letters/${coverLetterId}/regenerate`, { body });
-
-	return unwrapOptionalApiData(response, ["200", "201", "202"]);
 }
 
 export async function deleteCoverLetter(coverLetterId: number) {
