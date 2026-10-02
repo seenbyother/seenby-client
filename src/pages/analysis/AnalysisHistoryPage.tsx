@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router";
 import {
 	type CoverLettersResponse,
@@ -9,12 +9,14 @@ import {
 	getAnalysisHistory,
 } from "@/features/feedback-groups/api";
 import { BottomNavigation, Header } from "@/shared/components";
+import { useInfiniteScrollSentinel } from "@/shared/hooks/useInfiniteScrollSentinel";
 import { formatYearMonthDay } from "@/shared/utils/date";
 import { AnalysisHistoryCard } from "./_components/AnalysisHistoryCard";
 
 type AnalysisTab = "AI 분석" | "자기소개서";
 
 const ANALYSIS_TABS: AnalysisTab[] = ["AI 분석", "자기소개서"];
+const ANALYSIS_PAGE_SIZE = 10;
 
 export function AnalysisHistoryPage() {
 	const navigate = useNavigate();
@@ -22,9 +24,13 @@ export function AnalysisHistoryPage() {
 	const activeTab: AnalysisTab =
 		searchParams.get("tab") === "cover-letter" ? "자기소개서" : "AI 분석";
 	const isAnalysisTab = activeTab === "AI 분석";
-	const analysisQuery = useQuery({
+	const analysisQuery = useInfiniteQuery({
 		queryKey: ["analysis-history"],
-		queryFn: getAnalysisHistory,
+		queryFn: ({ pageParam }) =>
+			getAnalysisHistory({ page: pageParam, size: ANALYSIS_PAGE_SIZE }),
+		initialPageParam: 0,
+		getNextPageParam: (lastPage) =>
+			lastPage.hasNext ? lastPage.page + 1 : undefined,
 		enabled: isAnalysisTab,
 	});
 	const coverLettersQuery = useQuery({
@@ -34,9 +40,14 @@ export function AnalysisHistoryPage() {
 	});
 	const activeQuery = isAnalysisTab ? analysisQuery : coverLettersQuery;
 	const historyItems = isAnalysisTab
-		? getAnalysisHistoryItems(analysisQuery.data)
+		? getAnalysisHistoryItems(analysisQuery.data?.pages)
 		: getCoverLetterHistoryItems(coverLettersQuery.data);
 	const isRefreshing = activeQuery.isFetching && !activeQuery.isLoading;
+	const sentinelRef = useInfiniteScrollSentinel({
+		hasNextPage: isAnalysisTab && (analysisQuery.hasNextPage ?? false),
+		isFetchingNextPage: analysisQuery.isFetchingNextPage,
+		onLoadMore: () => analysisQuery.fetchNextPage(),
+	});
 
 	return (
 		<div className="min-h-screen bg-[#F8F8F8] flex flex-col relative">
@@ -129,6 +140,14 @@ export function AnalysisHistoryPage() {
 								}}
 							/>
 						))}
+						{isAnalysisTab ? <div ref={sentinelRef} /> : null}
+						{isAnalysisTab && analysisQuery.isFetchingNextPage ? (
+							<div className="flex items-center justify-center py-4">
+								<span className="text-[14px] text-black/50">
+									불러오는 중...
+								</span>
+							</div>
+						) : null}
 					</div>
 				)}
 			</main>
@@ -150,20 +169,22 @@ type VisibleHistoryItem = {
 };
 
 function getAnalysisHistoryItems(
-	data: AnalysisHistoryResponse | undefined,
+	pages: AnalysisHistoryResponse[] | undefined,
 ): VisibleHistoryItem[] {
-	if (!data) {
+	if (!pages) {
 		return [];
 	}
 
-	return data.analyses.map((item) => ({
-		id: item.analysisId,
-		title: item.group.title,
-		dateLabel: formatYearMonthDay(item.analyzedAt ?? item.createdAt),
-		href: `/analysis/ai/${item.analysisId}`,
-		statusLabel: item.status === "PROCESSING" ? "생성 중" : "완료",
-		statusTone: item.status === "PROCESSING" ? "blue" : "gray",
-	}));
+	return pages
+		.flatMap((page) => page.analyses)
+		.map((item) => ({
+			id: item.analysisId,
+			title: item.group.title,
+			dateLabel: formatYearMonthDay(item.analyzedAt ?? item.createdAt),
+			href: `/analysis/ai/${item.analysisId}`,
+			statusLabel: item.status === "PROCESSING" ? "생성 중" : "완료",
+			statusTone: item.status === "PROCESSING" ? "blue" : "gray",
+		}));
 }
 
 function getCoverLetterHistoryItems(
