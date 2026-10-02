@@ -5,6 +5,7 @@ interface AnalysisHistoryCardProps {
 	dateLabel: string;
 	statusLabel?: string;
 	statusTone?: "blue" | "gray" | "red";
+	isProcessing?: boolean;
 	disabled?: boolean;
 	dimmed?: boolean;
 	onClick: () => void;
@@ -15,6 +16,7 @@ export function AnalysisHistoryCard({
 	dateLabel,
 	statusLabel,
 	statusTone = "gray",
+	isProcessing = false,
 	disabled = false,
 	dimmed = false,
 	onClick,
@@ -24,8 +26,10 @@ export function AnalysisHistoryCard({
 			type="button"
 			onClick={onClick}
 			disabled={disabled}
+			aria-busy={isProcessing || undefined}
 			className={[
 				"w-full text-left bg-white rounded-[20px] p-4 flex items-center justify-between gap-2 border-none cursor-pointer transition-opacity disabled:cursor-default",
+				isProcessing ? "generation-processing-card" : "",
 				dimmed ? "opacity-45" : "",
 			].join(" ")}
 		>
@@ -36,6 +40,7 @@ export function AnalysisHistoryCard({
 					</span>
 					{statusLabel ? (
 						<span
+							role="status"
 							className={[
 								"mt-[3px] shrink-0 rounded-full px-2 py-1 text-[11px] font-bold leading-none",
 								getStatusToneClassName(statusTone),
