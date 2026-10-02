@@ -24,9 +24,26 @@ export type CoverLetterSummary = {
 	selectedCategory: string;
 	feedbackGroupId: number;
 	feedbackGroupName: string;
-	status: "PROCESSING" | "COMPLETED" | "FAILED";
+	status: CoverLetterGenerationStatus;
+	generationVersion?: number;
+	failureReason?: string | null;
 	createdAt: string;
 	completedAt: string | null;
+};
+
+export type CoverLetterGenerationStatus = "PROCESSING" | "COMPLETED" | "FAILED";
+
+export type CoverLetterGenerationStatusEvent = {
+	resourceType: "COVER_LETTER";
+	id: number;
+	generationVersion: number;
+	status: CoverLetterGenerationStatus;
+	failureReason: string | null;
+};
+
+export type CoverLetterDeletedEvent = {
+	resourceType: "COVER_LETTER";
+	id: number;
 };
 
 export type CoverLettersResponse = {
