@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import { getCurrentUserName, useCurrentUser } from "@/features/auth/hooks";
-import { regenerateCoverLetter } from "@/features/cover-letters/api";
 import {
 	createFeedbackAnalysis,
 	createFeedbackCoverLetter,
@@ -31,7 +30,7 @@ const SUBMIT_ERROR_MESSAGE =
 	"AI 분석 요청을 완료하지 못했어요. 잠시 후 다시 시도해주세요.";
 const ANALYSIS_REGENERATION_ERROR_MESSAGE =
 	"피드백 분석을 다시 생성하지 못했어요. 잠시 후 다시 시도해주세요.";
-const COVER_LETTER_REGENERATION_ERROR_MESSAGE =
+const COVER_LETTER_ADDITIONAL_GENERATION_ERROR_MESSAGE =
 	"자기소개서를 다시 생성하지 못했어요. 잠시 후 다시 시도해주세요.";
 
 export function GroupAnalysisPage() {
@@ -49,17 +48,22 @@ export function GroupAnalysisPage() {
 		useState(false);
 
 	const id = Number(groupId);
-	const regenerationCoverLetterId = Number(searchParams.get("coverLetterId"));
+	const generationMode = searchParams.get("mode");
+	const legacyCoverLetterId = Number(searchParams.get("coverLetterId"));
 	const regenerationAnalysisId = Number(searchParams.get("analysisId"));
-	const isCoverLetterRegeneration =
-		searchParams.get("mode") === "cover-letter-regenerate" &&
-		Number.isInteger(regenerationCoverLetterId) &&
-		regenerationCoverLetterId > 0;
+	const isLegacyCoverLetterRegenerationLink =
+		generationMode === "cover-letter-regenerate" &&
+		Number.isInteger(legacyCoverLetterId) &&
+		legacyCoverLetterId > 0;
+	const isCoverLetterAdditionalGeneration =
+		generationMode === "cover-letter-create-another" ||
+		isLegacyCoverLetterRegenerationLink;
 	const isAnalysisRegeneration =
-		searchParams.get("mode") === "analysis-regenerate" &&
+		generationMode === "analysis-regenerate" &&
 		Number.isInteger(regenerationAnalysisId) &&
 		regenerationAnalysisId > 0;
-	const isRegeneration = isCoverLetterRegeneration || isAnalysisRegeneration;
+	const isRegeneration =
+		isCoverLetterAdditionalGeneration || isAnalysisRegeneration;
 	const isValidGroupId = Number.isInteger(id) && id > 0;
 	const { data: currentUser } = useCurrentUser();
 	const userName = getCurrentUserName(currentUser);
@@ -103,11 +107,11 @@ export function GroupAnalysisPage() {
 				selfKeywords,
 			};
 
-			if (isCoverLetterRegeneration) {
+			if (isCoverLetterAdditionalGeneration) {
 				try {
-					await regenerateCoverLetter(regenerationCoverLetterId, requestBody);
+					await createFeedbackCoverLetter(id, requestBody);
 				} catch {
-					throw new Error(COVER_LETTER_REGENERATION_ERROR_MESSAGE);
+					throw new Error(COVER_LETTER_ADDITIONAL_GENERATION_ERROR_MESSAGE);
 				}
 				return;
 			}
@@ -134,7 +138,12 @@ export function GroupAnalysisPage() {
 				queryClient.invalidateQueries({ queryKey: ["cover-letters"] }),
 				queryClient.invalidateQueries({ queryKey: ["analysis-history"] }),
 			]);
-			navigate("/analysis", { replace: true });
+			navigate(
+				isCoverLetterAdditionalGeneration
+					? "/analysis?tab=cover-letter"
+					: "/analysis",
+				{ replace: true },
+			);
 		},
 		onError: (error) => {
 			navigate(`/groups/${id}/analysis/result`, {
@@ -329,7 +338,7 @@ export function GroupAnalysisPage() {
 								{getErrorMessage(
 									analysisMutation.error,
 									isRegeneration
-										? isCoverLetterRegeneration
+										? isCoverLetterAdditionalGeneration
 											? "자기소개서를 다시 생성하지 못했어요."
 											: "피드백 분석을 다시 생성하지 못했어요."
 										: "AI 분석을 요청하지 못했어요.",

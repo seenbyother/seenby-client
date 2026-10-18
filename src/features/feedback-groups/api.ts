@@ -192,9 +192,24 @@ export type AnalysisHistoryItem = {
 		id: number;
 		title: string;
 	};
-	status: "PROCESSING" | "COMPLETED";
+	status: AnalysisGenerationStatus;
+	failureReason?: string | null;
 	analyzedAt: string | null;
 	createdAt: string;
+};
+
+export type AnalysisGenerationStatus = "PROCESSING" | "COMPLETED" | "FAILED";
+
+export type AnalysisGenerationStatusEvent = {
+	resourceType: "AI_ANALYSIS";
+	id: number;
+	status: AnalysisGenerationStatus;
+	failureReason: string | null;
+};
+
+export type AnalysisDeletedEvent = {
+	resourceType: "AI_ANALYSIS";
+	id: number;
 };
 
 export type AnalysisHistoryResponse = {
