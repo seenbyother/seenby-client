@@ -1,5 +1,6 @@
 import { type QueryClient, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
+import { trackEvent } from "@/shared/analytics";
 import type {
 	CoverLetterGenerationStatusEvent,
 	CoverLettersResponse,
@@ -35,6 +36,7 @@ export function useCoverLetterGenerationEvents(
 					const didApply = updateCoverLetterStatus(queryClient, event);
 
 					if (didApply && event.status === "COMPLETED") {
+						trackEvent("cover_letter_generation_completed");
 						void queryClient.invalidateQueries({
 							queryKey: COVER_LETTERS_QUERY_KEY,
 						});

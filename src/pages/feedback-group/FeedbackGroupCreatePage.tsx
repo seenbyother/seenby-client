@@ -4,15 +4,19 @@ import { useNavigate } from "react-router";
 import linkCharacter from "@/assets/images/link.png";
 import kakaoIcon from "@/assets/kakao.svg";
 import LinkIcon from "@/assets/link.svg?react";
+import { getCurrentUserName, useCurrentUser } from "@/features/auth/hooks";
 import {
 	createFeedbackGroup,
 	type FeedbackGroupsResponse,
 } from "@/features/feedback-groups/api";
-import { getCurrentUserName, useCurrentUser } from "@/features/auth/hooks";
 import { GroupCreateHeader } from "@/pages/feedback-group/_components/GroupCreateHeader";
 import { ShareButton } from "@/pages/feedback-group/_components/ShareButton";
 import { StepTitle } from "@/pages/feedback-group/_components/StepTitle";
-import { CONTEXT_OPTIONS, RELATION_OPTIONS } from "@/pages/feedback-group/constants";
+import {
+	CONTEXT_OPTIONS,
+	RELATION_OPTIONS,
+} from "@/pages/feedback-group/constants";
+import { trackEvent } from "@/shared/analytics";
 import { ApiError } from "@/shared/api";
 import { Button, Input, KeywordChip } from "@/shared/components";
 import { shareToKakaoWithTemplate } from "@/shared/lib/kakao";
@@ -57,7 +61,7 @@ export function FeedbackGroupCreatePage() {
 
 	const createMutation = useMutation({
 		mutationFn: createFeedbackGroup,
-		onSuccess: (group) => {
+		onSuccess: (group, variables) => {
 			queryClient.setQueryData<FeedbackGroupsResponse>(
 				["feedback-groups"],
 				(current) => {
@@ -76,15 +80,34 @@ export function FeedbackGroupCreatePage() {
 				},
 			);
 			queryClient.invalidateQueries({ queryKey: ["feedback-groups"] });
+			trackEvent("feedback_group_created", {
+				context_input_type: CONTEXT_OPTIONS.includes(variables.contextType)
+					? "preset"
+					: "custom",
+				relationship_input_type: RELATION_OPTIONS.includes(
+					variables.relationshipType,
+				)
+					? "preset"
+					: "custom",
+			});
 			setLinkToken(group.linkToken);
 			setStep("complete");
 		},
 	});
 
 	const goBack = () => {
-		if (step === "relation") { setStep("name"); return; }
-		if (step === "context") { setStep("relation"); return; }
-		if (step === "complete") { setStep("context"); return; }
+		if (step === "relation") {
+			setStep("name");
+			return;
+		}
+		if (step === "context") {
+			setStep("relation");
+			return;
+		}
+		if (step === "complete") {
+			setStep("context");
+			return;
+		}
 
 		if (window.history.length > 1) {
 			navigate(-1);
@@ -96,13 +119,17 @@ export function FeedbackGroupCreatePage() {
 	const copyShareLink = async () => {
 		if (!navigator.clipboard || !shareUrl) return;
 		await navigator.clipboard.writeText(shareUrl);
+		trackEvent("feedback_link_shared", { share_method: "copy" });
 	};
 
 	const shareToKakao = () => {
-		shareToKakaoWithTemplate(134316, {
+		const didOpenShareDialog = shareToKakaoWithTemplate(134316, {
 			userName,
 			link: `feedback?token=${linkToken}`,
 		});
+		if (didOpenShareDialog) {
+			trackEvent("feedback_link_shared", { share_method: "kakao" });
+		}
 	};
 
 	const submitGroupName = (event: { preventDefault(): void }) => {

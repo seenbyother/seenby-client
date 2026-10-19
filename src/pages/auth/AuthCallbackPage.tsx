@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { exchangeKakaoLoginCode, getCurrentUser } from "@/features/auth/api";
 import { getPostLoginRedirectPath } from "@/features/onboarding/routing";
+import { trackEvent } from "@/shared/analytics";
 import { ApiError } from "@/shared/api";
 import "./AuthCallbackPage.css";
 
@@ -37,6 +38,7 @@ export function AuthCallbackPage() {
 			return getCurrentUser();
 		},
 		onSuccess: (currentUser) => {
+			trackEvent("login", { method: "kakao" });
 			navigate(getPostLoginRedirectPath(currentUser), { replace: true });
 		},
 		onError: (error: unknown) => {

@@ -1,7 +1,11 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useSearchParams } from "react-router";
-import { getPublicFeedbackGroup, submitPublicFeedbackAnswer } from "@/features/feedback-groups/api";
+import {
+	getPublicFeedbackGroup,
+	submitPublicFeedbackAnswer,
+} from "@/features/feedback-groups/api";
+import { trackEvent } from "@/shared/analytics";
 import { CompletionStep } from "./steps/CompletionStep";
 import { ExperienceStep } from "./steps/ExperienceStep";
 import { KeywordStep } from "./steps/KeywordStep";
@@ -9,13 +13,23 @@ import { LandingStep } from "./steps/LandingStep";
 import { NicknameStep } from "./steps/NicknameStep";
 import { ThoughtsStep } from "./steps/ThoughtsStep";
 
-type Step = "landing" | "nickname" | "keywords" | "experience" | "thoughts" | "completion";
+type Step =
+	| "landing"
+	| "nickname"
+	| "keywords"
+	| "experience"
+	| "thoughts"
+	| "completion";
 
 export function FeedbackPage() {
 	const [searchParams] = useSearchParams();
 	const linkToken = searchParams.get("token") ?? "";
 
-	const { data: groupInfo, isLoading, isError } = useQuery({
+	const {
+		data: groupInfo,
+		isLoading,
+		isError,
+	} = useQuery({
 		queryKey: ["public-feedback-group", linkToken],
 		queryFn: () => getPublicFeedbackGroup(linkToken),
 		enabled: !!linkToken,
@@ -40,12 +54,21 @@ export function FeedbackPage() {
 				keywords: selectedKeywords,
 			});
 		},
-		onSuccess: () => setStep("completion"),
+		onSuccess: () => {
+			trackEvent("feedback_submitted", {
+				experience_count: experiences.filter((experience) => experience.trim())
+					.length,
+				keyword_count: selectedKeywords.length,
+			});
+			setStep("completion");
+		},
 	});
 
 	const toggleKeyword = (keyword: string) => {
 		setSelectedKeywords((prev) =>
-			prev.includes(keyword) ? prev.filter((k) => k !== keyword) : [...prev, keyword],
+			prev.includes(keyword)
+				? prev.filter((k) => k !== keyword)
+				: [...prev, keyword],
 		);
 	};
 

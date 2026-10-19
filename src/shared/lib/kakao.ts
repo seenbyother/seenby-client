@@ -22,7 +22,9 @@ function initKakao(): boolean {
 	}
 
 	if (!window.Kakao) {
-		console.error("[Kakao] Kakao SDK가 로드되지 않았습니다. index.html 스크립트를 확인하세요.");
+		console.error(
+			"[Kakao] Kakao SDK가 로드되지 않았습니다. index.html 스크립트를 확인하세요.",
+		);
 		return false;
 	}
 
@@ -33,11 +35,16 @@ function initKakao(): boolean {
 	return window.Kakao.isInitialized();
 }
 
-export function shareToKakaoWithTemplate(templateId: number, templateArgs: Record<string, string>) {
+export function shareToKakaoWithTemplate(
+	templateId: number,
+	templateArgs: Record<string, string>,
+) {
 	try {
-		if (!initKakao()) return;
+		if (!initKakao()) return false;
 		window.Kakao.Share.sendCustom({ templateId, templateArgs });
+		return true;
 	} catch (error) {
 		console.error("[Kakao] 공유 실패:", error);
+		return false;
 	}
 }
