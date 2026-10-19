@@ -144,7 +144,8 @@
 	color: var(--muted);
 }
 
-.terms button {
+.terms button,
+.terms a {
 	padding: 0;
 	border: 0;
 	border-bottom: 1px solid rgba(17, 24, 39, 0.38);
@@ -155,7 +156,8 @@
 	text-underline-offset: 3px;
 }
 
-.terms button:focus-visible {
+.terms button:focus-visible,
+.terms a:focus-visible {
 	outline: 2px solid rgba(20, 118, 255, 0.22);
 	outline-offset: 3px;
 	border-radius: 3px;
