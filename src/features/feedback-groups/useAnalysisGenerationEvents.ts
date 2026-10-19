@@ -1,5 +1,6 @@
 import { type QueryClient, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
+import { trackEvent } from "@/shared/analytics";
 import { subscribeToAnalysisGenerationEvents } from "./analysisEvents";
 import type {
 	AnalysisGenerationStatusEvent,
@@ -35,6 +36,7 @@ export function useAnalysisGenerationEvents(
 					const didApply = updateAnalysisStatus(queryClient, event);
 
 					if (didApply && event.status === "COMPLETED") {
+						trackEvent("ai_generation_completed");
 						void queryClient.invalidateQueries({
 							queryKey: ANALYSIS_HISTORY_QUERY_KEY,
 						});

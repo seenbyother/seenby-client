@@ -18,6 +18,7 @@ import {
 	type SelfKeywordCategory,
 	type SelfKeywordCategoryId,
 } from "@/features/onboarding/selfKeywords";
+import { trackEvent } from "@/shared/analytics";
 import { Header } from "@/shared/components";
 import { FloatingActionButton } from "./_components/FloatingActionButton";
 import { getErrorMessage } from "./utils";
@@ -102,6 +103,10 @@ export function GroupAnalysisPage() {
 		mutationFn: async () => {
 			const answerIds = Array.from(selectedIds);
 			const selfKeywords = getOrderedSelfKeywords(selectedSelfKeywords);
+			const analyticsParameters = {
+				feedback_count: answerIds.length,
+				self_keyword_count: selfKeywords.length,
+			};
 			const requestBody = {
 				answerIds,
 				selfKeywords,
@@ -110,6 +115,10 @@ export function GroupAnalysisPage() {
 			if (isCoverLetterAdditionalGeneration) {
 				try {
 					await createFeedbackCoverLetter(id, requestBody);
+					trackEvent("cover_letter_generation_requested", {
+						...analyticsParameters,
+						generation_mode: "additional",
+					});
 				} catch {
 					throw new Error(COVER_LETTER_ADDITIONAL_GENERATION_ERROR_MESSAGE);
 				}
@@ -119,17 +128,37 @@ export function GroupAnalysisPage() {
 			if (isAnalysisRegeneration) {
 				try {
 					await createFeedbackAnalysis(id, requestBody);
+					trackEvent("ai_generation_requested", {
+						...analyticsParameters,
+						generation_mode: "regeneration",
+					});
 				} catch {
 					throw new Error(ANALYSIS_REGENERATION_ERROR_MESSAGE);
 				}
 				return;
 			}
 
-			const results = await Promise.allSettled([
+			const [analysisResult, coverLetterResult] = await Promise.allSettled([
 				createFeedbackAnalysis(id, requestBody),
 				createFeedbackCoverLetter(id, requestBody),
 			]);
-			if (results.some((result) => result.status === "rejected")) {
+
+			if (analysisResult.status === "fulfilled") {
+				trackEvent("ai_generation_requested", {
+					...analyticsParameters,
+					generation_mode: "initial",
+				});
+			}
+			if (coverLetterResult.status === "fulfilled") {
+				trackEvent("cover_letter_generation_requested", {
+					...analyticsParameters,
+					generation_mode: "initial",
+				});
+			}
+			if (
+				analysisResult.status === "rejected" ||
+				coverLetterResult.status === "rejected"
+			) {
 				throw new Error(SUBMIT_ERROR_MESSAGE);
 			}
 		},

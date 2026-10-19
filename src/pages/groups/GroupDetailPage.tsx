@@ -15,6 +15,7 @@ import {
 	CONTEXT_OPTIONS,
 	RELATION_OPTIONS,
 } from "@/pages/feedback-group/constants";
+import { trackEvent } from "@/shared/analytics";
 import { ApiError } from "@/shared/api";
 import { ActionMenu, ConfirmDialog, Header } from "@/shared/components";
 import { shareToKakaoWithTemplate } from "@/shared/lib/kakao";
@@ -220,6 +221,7 @@ export function GroupDetailPage() {
 
 		try {
 			await navigator.clipboard.writeText(shareUrl);
+			trackEvent("feedback_link_shared", { share_method: "copy" });
 			setCopyMessage("링크를 복사했어요.");
 		} catch {
 			setCopyMessage("링크 복사에 실패했어요.");
@@ -228,10 +230,13 @@ export function GroupDetailPage() {
 
 	const shareGroupToKakao = () => {
 		if (!group?.linkToken) return;
-		shareToKakaoWithTemplate(134316, {
+		const didOpenShareDialog = shareToKakaoWithTemplate(134316, {
 			userName,
 			link: `feedback?token=${group.linkToken}`,
 		});
+		if (didOpenShareDialog) {
+			trackEvent("feedback_link_shared", { share_method: "kakao" });
+		}
 	};
 
 	if (!isValidGroupId) {
