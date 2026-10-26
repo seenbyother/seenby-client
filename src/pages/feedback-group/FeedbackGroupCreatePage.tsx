@@ -1,4 +1,8 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+	type InfiniteData,
+	useMutation,
+	useQueryClient,
+} from "@tanstack/react-query";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import linkCharacter from "@/assets/images/link.png";
@@ -58,20 +62,45 @@ export function FeedbackGroupCreatePage() {
 	const createMutation = useMutation({
 		mutationFn: createFeedbackGroup,
 		onSuccess: (group) => {
-			queryClient.setQueryData<FeedbackGroupsResponse>(
+			queryClient.setQueryData<InfiniteData<FeedbackGroupsResponse>>(
 				["feedback-groups"],
 				(current) => {
 					if (!current) {
-						return { groupCount: 1, groups: [group] };
+						return {
+							pages: [
+								{
+									groupCount: 1,
+									groups: [group],
+									page: 0,
+									size: 10,
+									totalPages: 1,
+									hasNext: false,
+								},
+							],
+							pageParams: [0],
+						};
 					}
 
-					if (current.groups.some((item) => item.id === group.id)) {
+					const alreadyExists = current.pages.some((page) =>
+						page.groups.some((item) => item.id === group.id),
+					);
+
+					if (alreadyExists) {
 						return current;
 					}
 
+					const [firstPage, ...restPages] = current.pages;
+
 					return {
-						groupCount: current.groupCount + 1,
-						groups: [group, ...current.groups],
+						...current,
+						pages: [
+							{
+								...firstPage,
+								groupCount: firstPage.groupCount + 1,
+								groups: [group, ...firstPage.groups],
+							},
+							...restPages,
+						],
 					};
 				},
 			);
