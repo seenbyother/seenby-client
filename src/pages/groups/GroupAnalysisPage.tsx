@@ -7,12 +7,9 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import { getCurrentUserName, useCurrentUser } from "@/features/auth/hooks";
-import { regenerateCoverLetter } from "@/features/cover-letters/api";
 import {
 	createFeedbackAnalysis,
 	createFeedbackCoverLetter,
-	type FeedbackAnalysisCreateResult,
-	type FeedbackCoverLetterCreateResult,
 	getFeedbackGroupDetail,
 } from "@/features/feedback-groups/api";
 import { getSelfKeywords } from "@/features/onboarding/api";
@@ -36,14 +33,12 @@ type Step = "selectFeedback" | "selectSelfKeywords";
 const MIN_ANALYSIS_FEEDBACK_COUNT = 3;
 const ANSWER_PAGE_SIZE = 10;
 
-type AnalysisSubmitResult = {
-	analysis: FeedbackAnalysisCreateResult;
-	coverLetter: FeedbackCoverLetterCreateResult;
-};
-
-type AnalysisSubmitFailure = {
-	message: string;
-};
+const SUBMIT_ERROR_MESSAGE =
+	"AI 분석 요청을 완료하지 못했어요. 잠시 후 다시 시도해주세요.";
+const ANALYSIS_REGENERATION_ERROR_MESSAGE =
+	"피드백 분석을 다시 생성하지 못했어요. 잠시 후 다시 시도해주세요.";
+const COVER_LETTER_ADDITIONAL_GENERATION_ERROR_MESSAGE =
+	"자기소개서를 다시 생성하지 못했어요. 잠시 후 다시 시도해주세요.";
 
 export function GroupAnalysisPage() {
 	const { groupId } = useParams<{ groupId: string }>();
@@ -60,11 +55,22 @@ export function GroupAnalysisPage() {
 		useState(false);
 
 	const id = Number(groupId);
-	const regenerationCoverLetterId = Number(searchParams.get("coverLetterId"));
-	const isCoverLetterRegeneration =
-		searchParams.get("mode") === "cover-letter-regenerate" &&
-		Number.isInteger(regenerationCoverLetterId) &&
-		regenerationCoverLetterId > 0;
+	const generationMode = searchParams.get("mode");
+	const legacyCoverLetterId = Number(searchParams.get("coverLetterId"));
+	const regenerationAnalysisId = Number(searchParams.get("analysisId"));
+	const isLegacyCoverLetterRegenerationLink =
+		generationMode === "cover-letter-regenerate" &&
+		Number.isInteger(legacyCoverLetterId) &&
+		legacyCoverLetterId > 0;
+	const isCoverLetterAdditionalGeneration =
+		generationMode === "cover-letter-create-another" ||
+		isLegacyCoverLetterRegenerationLink;
+	const isAnalysisRegeneration =
+		generationMode === "analysis-regenerate" &&
+		Number.isInteger(regenerationAnalysisId) &&
+		regenerationAnalysisId > 0;
+	const isRegeneration =
+		isCoverLetterAdditionalGeneration || isAnalysisRegeneration;
 	const isValidGroupId = Number.isInteger(id) && id > 0;
 	const { data: currentUser } = useCurrentUser();
 	const userName = getCurrentUserName(currentUser);
@@ -114,10 +120,7 @@ export function GroupAnalysisPage() {
 
 	const [selectedIds, setSelectedIds] = useState<Set<number>>(() => new Set());
 
-	const analysisMutation = useMutation<
-		AnalysisSubmitResult | FeedbackCoverLetterCreateResult,
-		AnalysisSubmitFailure
-	>({
+	const analysisMutation = useMutation<void, Error>({
 		mutationFn: async () => {
 			const answerIds = Array.from(selectedIds);
 			const selfKeywords = getOrderedSelfKeywords(selectedSelfKeywords);
@@ -126,52 +129,43 @@ export function GroupAnalysisPage() {
 				selfKeywords,
 			};
 
-			if (isCoverLetterRegeneration) {
+			if (isCoverLetterAdditionalGeneration) {
 				try {
-					const regeneratedCoverLetter = await regenerateCoverLetter(
-						regenerationCoverLetterId,
-						requestBody,
-					);
-
-					return (
-						regeneratedCoverLetter ?? {
-							id: regenerationCoverLetterId,
-							status: "PROCESSING",
-						}
-					);
+					await createFeedbackCoverLetter(id, requestBody);
 				} catch {
-					throw {
-						message:
-							"자기소개서를 다시 생성하지 못했어요. 잠시 후 다시 시도해주세요.",
-					};
+					throw new Error(COVER_LETTER_ADDITIONAL_GENERATION_ERROR_MESSAGE);
 				}
+				return;
 			}
-			const [analysisResult, coverLetterResult] = await Promise.allSettled([
+
+			if (isAnalysisRegeneration) {
+				try {
+					await createFeedbackAnalysis(id, requestBody);
+				} catch {
+					throw new Error(ANALYSIS_REGENERATION_ERROR_MESSAGE);
+				}
+				return;
+			}
+
+			const results = await Promise.allSettled([
 				createFeedbackAnalysis(id, requestBody),
 				createFeedbackCoverLetter(id, requestBody),
 			]);
-
-			if (
-				analysisResult.status !== "fulfilled" ||
-				coverLetterResult.status !== "fulfilled"
-			) {
-				throw {
-					message:
-						"AI 분석 요청을 완료하지 못했어요. 잠시 후 다시 시도해주세요.",
-				};
+			if (results.some((result) => result.status === "rejected")) {
+				throw new Error(SUBMIT_ERROR_MESSAGE);
 			}
-
-			const analysis = analysisResult.value;
-			const coverLetter = coverLetterResult.value;
-
-			return { analysis, coverLetter };
 		},
 		onSuccess: async () => {
 			await Promise.all([
 				queryClient.invalidateQueries({ queryKey: ["cover-letters"] }),
 				queryClient.invalidateQueries({ queryKey: ["analysis-history"] }),
 			]);
-			navigate("/analysis", { replace: true });
+			navigate(
+				isCoverLetterAdditionalGeneration
+					? "/analysis?tab=cover-letter"
+					: "/analysis",
+				{ replace: true },
+			);
 		},
 		onError: (error) => {
 			navigate(`/groups/${id}/analysis/result`, {
@@ -378,8 +372,10 @@ export function GroupAnalysisPage() {
 							<p className="m-0 text-right text-[13px] font-medium text-red-500">
 								{getErrorMessage(
 									analysisMutation.error,
-									isCoverLetterRegeneration
-										? "자기소개서를 다시 생성하지 못했어요."
+									isRegeneration
+										? isCoverLetterAdditionalGeneration
+											? "자기소개서를 다시 생성하지 못했어요."
+											: "피드백 분석을 다시 생성하지 못했어요."
 										: "AI 분석을 요청하지 못했어요.",
 								)}
 							</p>
@@ -388,12 +384,12 @@ export function GroupAnalysisPage() {
 				>
 					<span className="text-[16px] font-medium leading-none">
 						{analysisMutation.isPending
-							? isCoverLetterRegeneration
+							? isRegeneration
 								? "생성 중"
 								: "제출 중"
 							: isSavedSelfKeywordsLoading
 								? "불러오는 중"
-								: isCoverLetterRegeneration
+								: isRegeneration
 									? "다시 생성"
 									: "제출 하기"}
 					</span>
@@ -408,9 +404,7 @@ export function GroupAnalysisPage() {
 	return (
 		<div className="min-h-screen bg-[#F8F8F8] flex flex-col relative">
 			<Header
-				title={
-					isCoverLetterRegeneration ? "재생성할 피드백 선택" : "피드백 선택"
-				}
+				title={isRegeneration ? "재생성할 피드백 선택" : "피드백 선택"}
 				onBack={() => navigate(-1)}
 				withBottomSpacing={false}
 			/>

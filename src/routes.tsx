@@ -29,6 +29,12 @@ export function AppRoutes() {
 				<Route path="/auth/success" element={<AuthSuccessPage />} />
 				<Route path="/forbidden" element={<ForbiddenPage />} />
 				<Route path="/feedback" element={<FeedbackPage />} />
+				{import.meta.env.DEV ? (
+					<Route
+						path="/analysis/ai/preview"
+						element={<AnalysisDetailPage preview />}
+					/>
+				) : null}
 
 				{/* protected */}
 				<Route element={<ProtectedRoute />}>

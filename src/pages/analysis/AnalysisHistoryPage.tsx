@@ -4,10 +4,12 @@ import {
 	type CoverLettersResponse,
 	getCoverLetters,
 } from "@/features/cover-letters/api";
+import { useCoverLetterGenerationEvents } from "@/features/cover-letters/useCoverLetterGenerationEvents";
 import {
 	type AnalysisHistoryResponse,
 	getAnalysisHistory,
 } from "@/features/feedback-groups/api";
+import { useAnalysisGenerationEvents } from "@/features/feedback-groups/useAnalysisGenerationEvents";
 import { BottomNavigation, Header } from "@/shared/components";
 import { useInfiniteScrollSentinel } from "@/shared/hooks/useInfiniteScrollSentinel";
 import { formatYearMonthDay } from "@/shared/utils/date";
@@ -38,11 +40,12 @@ export function AnalysisHistoryPage() {
 		queryFn: getCoverLetters,
 		enabled: !isAnalysisTab,
 	});
+	useAnalysisGenerationEvents(analysisQuery.data, isAnalysisTab);
+	useCoverLetterGenerationEvents(coverLettersQuery.data, !isAnalysisTab);
 	const activeQuery = isAnalysisTab ? analysisQuery : coverLettersQuery;
 	const historyItems = isAnalysisTab
 		? getAnalysisHistoryItems(analysisQuery.data?.pages)
 		: getCoverLetterHistoryItems(coverLettersQuery.data);
-	const isRefreshing = activeQuery.isFetching && !activeQuery.isLoading;
 	const sentinelRef = useInfiniteScrollSentinel({
 		hasNextPage: isAnalysisTab && (analysisQuery.hasNextPage ?? false),
 		isFetchingNextPage: analysisQuery.isFetchingNextPage,
@@ -85,18 +88,6 @@ export function AnalysisHistoryPage() {
 
 			{/* Content */}
 			<main className="flex-1 px-[17px] mt-3 pb-32">
-				<div className="mb-3 flex justify-end">
-					<button
-						type="button"
-						onClick={() => activeQuery.refetch()}
-						disabled={activeQuery.isFetching}
-						className="flex h-8 w-8 items-center justify-center border-none bg-transparent p-0 text-[#0073FF] disabled:cursor-not-allowed disabled:opacity-50"
-						aria-label={isRefreshing ? "새로고침 중" : "새로고침"}
-					>
-						<RefreshIcon className={isRefreshing ? "animate-spin" : ""} />
-					</button>
-				</div>
-
 				{activeQuery.isLoading ? (
 					<div className="flex items-center justify-center h-48">
 						<span className="text-[20px] text-black/50">불러오는 중...</span>
@@ -131,6 +122,7 @@ export function AnalysisHistoryPage() {
 								dateLabel={item.dateLabel}
 								statusLabel={item.statusLabel}
 								statusTone={item.statusTone}
+								isProcessing={item.isProcessing}
 								disabled={item.disabled}
 								dimmed={item.dimmed}
 								onClick={() => {
@@ -164,6 +156,7 @@ type VisibleHistoryItem = {
 	href: string;
 	statusLabel?: string;
 	statusTone?: "blue" | "gray" | "red";
+	isProcessing?: boolean;
 	disabled?: boolean;
 	dimmed?: boolean;
 };
@@ -182,9 +175,38 @@ function getAnalysisHistoryItems(
 			title: item.group.title,
 			dateLabel: formatYearMonthDay(item.analyzedAt ?? item.createdAt),
 			href: `/analysis/ai/${item.analysisId}`,
-			statusLabel: item.status === "PROCESSING" ? "생성 중" : "완료",
-			statusTone: item.status === "PROCESSING" ? "blue" : "gray",
+			statusLabel: getAnalysisStatusLabel(item.status),
+			statusTone: getAnalysisStatusTone(item.status),
+			isProcessing: item.status === "PROCESSING",
+			disabled: item.status !== "COMPLETED",
+			dimmed: item.status === "FAILED",
 		}));
+}
+
+function getAnalysisStatusLabel(
+	status: AnalysisHistoryResponse["analyses"][number]["status"],
+) {
+	switch (status) {
+		case "PROCESSING":
+			return "생성 중";
+		case "FAILED":
+			return "실패";
+		default:
+			return "완료";
+	}
+}
+
+function getAnalysisStatusTone(
+	status: AnalysisHistoryResponse["analyses"][number]["status"],
+): VisibleHistoryItem["statusTone"] {
+	switch (status) {
+		case "PROCESSING":
+			return "blue";
+		case "FAILED":
+			return "red";
+		default:
+			return "gray";
+	}
 }
 
 function getCoverLetterHistoryItems(
@@ -201,6 +223,7 @@ function getCoverLetterHistoryItems(
 		href: `/cover-letters/${item.id}`,
 		statusLabel: getCoverLetterStatusLabel(item.status),
 		statusTone: getCoverLetterStatusTone(item.status),
+		isProcessing: item.status === "PROCESSING",
 		disabled: item.status !== "COMPLETED",
 		dimmed: item.status === "FAILED",
 	}));
@@ -230,46 +253,4 @@ function getCoverLetterStatusTone(
 		default:
 			return "gray";
 	}
-}
-
-function RefreshIcon({ className = "" }: { className?: string }) {
-	return (
-		<svg
-			width="18"
-			height="18"
-			viewBox="0 0 24 24"
-			fill="none"
-			className={className}
-			aria-hidden="true"
-		>
-			<path
-				d="M20 6v5h-5"
-				stroke="currentColor"
-				strokeWidth="2"
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-			<path
-				d="M4 18v-5h5"
-				stroke="currentColor"
-				strokeWidth="2"
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-			<path
-				d="M6.1 9A7 7 0 0 1 17.7 6.4L20 11"
-				stroke="currentColor"
-				strokeWidth="2"
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-			<path
-				d="M17.9 15A7 7 0 0 1 6.3 17.6L4 13"
-				stroke="currentColor"
-				strokeWidth="2"
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-		</svg>
-	);
 }
