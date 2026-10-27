@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/react";
 import { API_BASE_URL } from "@/shared/api/config";
 import { ApiError } from "@/shared/api/errors";
 
@@ -88,17 +89,22 @@ async function sendRequest(
 	path: string,
 	{ body, headers, query, ...init }: RequestOptions,
 ) {
-	return fetch(buildUrl(path, query), {
-		...init,
-		credentials: init.credentials ?? "include",
-		method,
-		headers: {
-			Accept: "application/json",
-			...(body !== undefined ? { "Content-Type": "application/json" } : {}),
-			...headers,
-		},
-		body: body !== undefined ? JSON.stringify(body) : undefined,
-	});
+	try {
+		return await fetch(buildUrl(path, query), {
+			...init,
+			credentials: init.credentials ?? "include",
+			method,
+			headers: {
+				Accept: "application/json",
+				...(body !== undefined ? { "Content-Type": "application/json" } : {}),
+				...headers,
+			},
+			body: body !== undefined ? JSON.stringify(body) : undefined,
+		});
+	} catch (error) {
+		Sentry.captureException(error, { extra: { method, path } });
+		throw error;
+	}
 }
 
 function handleParsedResponse<TResponse>(
@@ -108,11 +114,19 @@ function handleParsedResponse<TResponse>(
 ) {
 	if (!response.ok) {
 		redirectByAuthStatus(response.status, path);
-		throw new ApiError(
+		const apiError = new ApiError(
 			response.status,
 			responseBody,
 			getApiErrorMessage(responseBody),
 		);
+
+		if (response.status >= 500) {
+			Sentry.captureException(apiError, {
+				extra: { path, status: response.status, body: responseBody },
+			});
+		}
+
+		throw apiError;
 	}
 
 	return responseBody as TResponse;

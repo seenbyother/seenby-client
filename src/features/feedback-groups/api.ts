@@ -23,6 +23,15 @@ export type FeedbackGroup = {
 export type FeedbackGroupsResponse = {
 	groupCount: number;
 	groups: FeedbackGroup[];
+	page: number;
+	size: number;
+	totalPages: number;
+	hasNext: boolean;
+};
+
+export type PageQuery = {
+	page?: number;
+	size?: number;
 };
 
 export type FeedbackAnswerSummary = {
@@ -44,24 +53,32 @@ export type FeedbackGroupDetail = {
 	linkActive: boolean;
 	endDate: string | null;
 	answers: FeedbackAnswerSummary[];
+	answerCount: number;
+	answerPage: number;
+	answerSize: number;
+	answerTotalPages: number;
+	answerHasNext: boolean;
 	aiAnalysisStatus: string | null;
 	coverLetterStatus: string | null;
 	createdAt: string;
 	updatedAt: string;
 };
 
-export async function getFeedbackGroups() {
+export async function getFeedbackGroups(query: PageQuery = {}) {
 	const response = await apiClient.get<
 		ApiResponse<FeedbackGroupsResponse> | FeedbackGroupsResponse
-	>("/feedback-groups");
+	>("/feedback-groups", { query });
 
 	return unwrapApiData(response);
 }
 
-export async function getFeedbackGroupDetail(groupId: number) {
+export async function getFeedbackGroupDetail(
+	groupId: number,
+	query: PageQuery = {},
+) {
 	const response = await apiClient.get<
 		ApiResponse<FeedbackGroupDetail> | FeedbackGroupDetail
-	>(`/feedback-groups/${groupId}`);
+	>(`/feedback-groups/${groupId}`, { query });
 
 	return unwrapApiData(response);
 }
@@ -192,19 +209,39 @@ export type AnalysisHistoryItem = {
 		id: number;
 		title: string;
 	};
-	status: "PROCESSING" | "COMPLETED";
+	status: AnalysisGenerationStatus;
+	failureReason?: string | null;
 	analyzedAt: string | null;
 	createdAt: string;
 };
 
-export type AnalysisHistoryResponse = {
-	analyses: AnalysisHistoryItem[];
+export type AnalysisGenerationStatus = "PROCESSING" | "COMPLETED" | "FAILED";
+
+export type AnalysisGenerationStatusEvent = {
+	resourceType: "AI_ANALYSIS";
+	id: number;
+	status: AnalysisGenerationStatus;
+	failureReason: string | null;
 };
 
-export async function getAnalysisHistory() {
+export type AnalysisDeletedEvent = {
+	resourceType: "AI_ANALYSIS";
+	id: number;
+};
+
+export type AnalysisHistoryResponse = {
+	analyses: AnalysisHistoryItem[];
+	analysisCount: number;
+	page: number;
+	size: number;
+	totalPages: number;
+	hasNext: boolean;
+};
+
+export async function getAnalysisHistory(query: PageQuery = {}) {
 	const response = await apiClient.get<
 		ApiResponse<AnalysisHistoryResponse> | AnalysisHistoryResponse
-	>("/feedback-groups/analysis");
+	>("/feedback-groups/analysis", { query });
 
 	return unwrapApiData(response);
 }
@@ -213,36 +250,82 @@ export async function deleteFeedbackAnalysis(analysisId: number) {
 	await apiClient.delete(`/feedback-groups/analysis/${analysisId}`);
 }
 
+export type AnalysisTypeCode =
+	| "HELPER"
+	| "ENERGIZER"
+	| "RELIABLE"
+	| "THINKER"
+	| "EXPLORER"
+	| "PIONEER";
+
+export type AnalysisStrength = {
+	title: string;
+	description: string;
+};
+
 export type AnalysisKeyword = {
-	rank: number;
-	keyword: string;
+	label: string;
 	count: number;
 };
 
-export type AnalysisSelfOtherRow = {
+export type AnalysisComparisonRow = {
 	label: string;
-	selfView: string[];
-	otherView: string[];
+	selfValues: string[];
+	othersValues: string[];
+};
+
+export type AnalysisAction = {
+	title: string;
+	description: string;
+};
+
+export type AnalysisInsight = {
+	title: string;
+	content: string;
+};
+
+export type AnalysisUsedFeedback = {
+	id: number;
+	reviewerName: string;
 };
 
 export type AnalysisDetail = {
-	id: number;
-	status: string;
-	group: {
-		id: number;
-		selfIntroductionId: number | null;
-		name: string;
+	analysisId: number;
+	feedbackGroupId: number;
+	feedbackGroupName: string;
+	status: "PROCESSING" | "COMPLETED" | "FAILED";
+	analyzedAt: string | null;
+	summaryAnalysis: {
+		pageTitle: string;
+		summary: string;
+		strengths: AnalysisStrength[];
+		growthSummary: string;
 	};
-	analyzedAt: string;
-	feedbackSummary: string;
-	topKeywords: AnalysisKeyword[] | null;
-	insight: string;
-	selfAwareness: number;
-	selfOtherComparison: {
-		rows: AnalysisSelfOtherRow[];
-	} | null;
-	actionPlan: string | null;
-	totalSummary: string;
+	keywordAnalysis: {
+		keywords: AnalysisKeyword[];
+	};
+	insightAnalysis: {
+		pageTitle: string;
+		insightSummary: string;
+		insights: AnalysisInsight[];
+	};
+	selfAwarenessAnalysis: {
+		selfAwarenessScore: number;
+		comparisonRows: AnalysisComparisonRow[];
+	};
+	actionPlan: {
+		actions: AnalysisAction[];
+		reviewGuide: string;
+	};
+	finalType: {
+		typeCode: AnalysisTypeCode;
+		typeName: string;
+		traits: string[];
+		strength: string;
+		growthPoint: string;
+	};
+	usedFeedbacks: AnalysisUsedFeedback[];
+	isRead: boolean;
 };
 
 export async function getAnalysisDetail(analysisId: number) {
