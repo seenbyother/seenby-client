@@ -1,12 +1,14 @@
 import { BrowserRouter } from "react-router";
 import { QueryProvider } from "@/app/providers/QueryProvider";
 import { AppRoutes } from "@/routes";
+import { AnalyticsRouteTracker } from "@/shared/analytics";
 
 export default function App() {
 	return (
 		<QueryProvider>
 			<BrowserRouter>
-				<div className="w-full min-h-screen text-left">
+				<AnalyticsRouteTracker />
+				<div className="w-full min-h-screen text-left" data-clarity-mask="true">
 					<AppRoutes />
 				</div>
 			</BrowserRouter>

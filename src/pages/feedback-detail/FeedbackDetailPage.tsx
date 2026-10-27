@@ -11,6 +11,7 @@ import {
 import { ExperienceCard } from "@/pages/feedback-detail/_components/ExperienceCard";
 import { RetrospectiveCard } from "@/pages/feedback-detail/_components/RetrospectiveCard";
 import { RetrospectiveSheet } from "@/pages/feedback-detail/_components/RetrospectiveSheet";
+import { trackEvent } from "@/shared/analytics";
 import { ApiError } from "@/shared/api";
 import { ActionMenu, ConfirmDialog, Header } from "@/shared/components";
 
@@ -67,10 +68,13 @@ export function FeedbackDetailPage() {
 			experienceFeedbackId: number;
 			retrospect: string | null;
 		}) => saveFeedbackRetrospect(experienceFeedbackId, retrospect),
-		onSuccess: async () => {
+		onSuccess: async (_data, variables) => {
 			setRetrospectiveSaveError(null);
 			setIsSheetOpen(false);
 			setEditingExperienceFeedbackId(null);
+			trackEvent("retrospective_saved", {
+				has_content: Boolean(variables.retrospect?.trim()),
+			});
 
 			await Promise.all([
 				queryClient.invalidateQueries({
