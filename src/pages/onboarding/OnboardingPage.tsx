@@ -8,6 +8,7 @@ import {
 } from "@/features/auth/hooks";
 import { saveSelfKeywords } from "@/features/onboarding/api";
 import { MAX_SELF_KEYWORD_COUNT_BY_CATEGORY } from "@/features/onboarding/selfKeywords";
+import { trackEvent } from "@/shared/analytics";
 import { ApiError } from "@/shared/api";
 import { OnboardingCompleteStep } from "./_components/OnboardingCompleteStep";
 import { OnboardingIntroStep } from "./_components/OnboardingIntroStep";
@@ -27,8 +28,11 @@ export function OnboardingPage() {
 	>({});
 	const saveSelfKeywordsMutation = useMutation({
 		mutationFn: saveSelfKeywords,
-		onSuccess: async () => {
+		onSuccess: async (_data, keywords) => {
 			await queryClient.refetchQueries({ queryKey: currentUserQueryKey });
+			trackEvent("onboarding_completed", {
+				keyword_count: keywords.length,
+			});
 			setStep("complete");
 		},
 	});

@@ -6,6 +6,9 @@ import "./LoginPage.css";
 
 type SocialPlatform = "kakao" | "google" | "apple";
 
+const PRIVACY_POLICY_URL =
+	"https://candle-bonsai-dbb.notion.site/32b85636a9a480feba97ed7f3394fbf2";
+
 const SOCIAL_PLATFORMS: {
 	id: SocialPlatform;
 	label: string;
@@ -47,8 +50,8 @@ function LoginPage() {
 		}
 	};
 
-	const handleTermsClick = (type: "terms" | "privacy") => {
-		console.log(`${type} clicked`);
+	const handleTermsClick = () => {
+		console.log("terms clicked");
 	};
 
 	return (
@@ -87,13 +90,13 @@ function LoginPage() {
 					</div>
 
 					<p className="terms">
-						<button type="button" onClick={() => handleTermsClick("terms")}>
+						<button type="button" onClick={handleTermsClick}>
 							이용약관
 						</button>
 						<span aria-hidden="true"> 및 </span>
-						<button type="button" onClick={() => handleTermsClick("privacy")}>
+						<a href={PRIVACY_POLICY_URL} rel="noreferrer" target="_blank">
 							개인정보처리방침
-						</button>
+						</a>
 					</p>
 				</div>
 			</section>
