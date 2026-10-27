@@ -7,6 +7,7 @@ type FloatingActionButtonProps = {
 	disabled?: boolean;
 	className?: string;
 	topContent?: ReactNode;
+	bottomClassName?: string;
 };
 
 const WEBVIEW_MAX_WIDTH = 402;
@@ -22,12 +23,13 @@ export function FloatingActionButton({
 	disabled = false,
 	className,
 	topContent,
+	bottomClassName = "bottom-10",
 }: FloatingActionButtonProps) {
 	const isActive = active && !disabled;
 
 	return (
 		<div
-			className="fixed bottom-10 z-20 flex flex-col items-end gap-2"
+			className={`fixed ${bottomClassName} z-20 flex flex-col items-end gap-2`}
 			style={floatingButtonPosition}
 		>
 			{topContent}

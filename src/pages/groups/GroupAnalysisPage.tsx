@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+	useInfiniteQuery,
+	useMutation,
+	useQuery,
+	useQueryClient,
+} from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import { getCurrentUserName, useCurrentUser } from "@/features/auth/hooks";
@@ -20,12 +25,14 @@ import {
 } from "@/features/onboarding/selfKeywords";
 import { trackEvent } from "@/shared/analytics";
 import { Header } from "@/shared/components";
+import { useInfiniteScrollSentinel } from "@/shared/hooks/useInfiniteScrollSentinel";
 import { FloatingActionButton } from "./_components/FloatingActionButton";
 import { getErrorMessage } from "./utils";
 
 type Step = "selectFeedback" | "selectSelfKeywords";
 
 const MIN_ANALYSIS_FEEDBACK_COUNT = 3;
+const ANSWER_PAGE_SIZE = 10;
 
 const SUBMIT_ERROR_MESSAGE =
 	"AI 분석 요청을 완료하지 못했어요. 잠시 후 다시 시도해주세요.";
@@ -70,15 +77,28 @@ export function GroupAnalysisPage() {
 	const userName = getCurrentUserName(currentUser);
 
 	const {
-		data: group,
+		data: groupPages,
 		error,
 		isError,
 		isLoading,
 		refetch,
-	} = useQuery({
+		fetchNextPage,
+		hasNextPage,
+		isFetchingNextPage,
+	} = useInfiniteQuery({
 		queryKey: ["feedback-group", id],
-		queryFn: () => getFeedbackGroupDetail(id),
+		queryFn: ({ pageParam }) =>
+			getFeedbackGroupDetail(id, { page: pageParam, size: ANSWER_PAGE_SIZE }),
+		initialPageParam: 0,
+		getNextPageParam: (lastPage) =>
+			lastPage.answerHasNext ? lastPage.answerPage + 1 : undefined,
 		enabled: isValidGroupId,
+	});
+	const group = groupPages?.pages[0];
+	const sentinelRef = useInfiniteScrollSentinel({
+		hasNextPage: hasNextPage ?? false,
+		isFetchingNextPage,
+		onLoadMore: () => fetchNextPage(),
 	});
 	const {
 		data: savedSelfKeywords,
@@ -90,14 +110,16 @@ export function GroupAnalysisPage() {
 		enabled: step === "selectSelfKeywords",
 	});
 
+	const answers = useMemo(
+		() => groupPages?.pages.flatMap((page) => page.answers) ?? [],
+		[groupPages],
+	);
 	const feedbacks = useMemo(
-		() =>
-			(group?.answers ?? []).filter((answer) => answer.retrospectiveCompleted),
-		[group?.answers],
+		() => answers.filter((answer) => answer.retrospectiveCompleted),
+		[answers],
 	);
 
 	const [selectedIds, setSelectedIds] = useState<Set<number>>(() => new Set());
-	const initializedSelectionGroupId = useRef<number | null>(null);
 
 	const analysisMutation = useMutation<void, Error>({
 		mutationFn: async () => {
@@ -184,12 +206,25 @@ export function GroupAnalysisPage() {
 		},
 	});
 
-	useEffect(() => {
-		if (!group || initializedSelectionGroupId.current === id) return;
+	const seenFeedbackIdsRef = useRef<Set<number>>(new Set());
 
-		setSelectedIds(new Set(feedbacks.map((feedback) => feedback.id)));
-		initializedSelectionGroupId.current = id;
-	}, [feedbacks, group, id]);
+	useEffect(() => {
+		setSelectedIds((prev) => {
+			const next = new Set(prev);
+
+			for (const feedback of feedbacks) {
+				if (!seenFeedbackIdsRef.current.has(feedback.id)) {
+					next.add(feedback.id);
+				}
+			}
+
+			seenFeedbackIdsRef.current = new Set(
+				feedbacks.map((feedback) => feedback.id),
+			);
+
+			return next;
+		});
+	}, [feedbacks]);
 
 	useEffect(() => {
 		if (
@@ -440,6 +475,14 @@ export function GroupAnalysisPage() {
 								</div>
 							</button>
 						))}
+						<div ref={sentinelRef} />
+						{isFetchingNextPage ? (
+							<div className="flex items-center justify-center py-4">
+								<span className="text-[14px] text-black/50">
+									불러오는 중...
+								</span>
+							</div>
+						) : null}
 					</div>
 				)}
 			</div>

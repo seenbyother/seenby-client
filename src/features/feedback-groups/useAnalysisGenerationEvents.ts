@@ -1,4 +1,8 @@
-import { type QueryClient, useQueryClient } from "@tanstack/react-query";
+import {
+	type InfiniteData,
+	type QueryClient,
+	useQueryClient,
+} from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 import { trackEvent } from "@/shared/analytics";
 import { subscribeToAnalysisGenerationEvents } from "./analysisEvents";
@@ -9,14 +13,17 @@ import type {
 
 const ANALYSIS_HISTORY_QUERY_KEY = ["analysis-history"] as const;
 
+type AnalysisHistoryData = InfiniteData<AnalysisHistoryResponse>;
+
 export function useAnalysisGenerationEvents(
-	data: AnalysisHistoryResponse | undefined,
+	data: AnalysisHistoryData | undefined,
 	enabled: boolean,
 ) {
 	const queryClient = useQueryClient();
 	const processingAnalysisIdsKey = useMemo(
 		() =>
-			(data?.analyses ?? [])
+			(data?.pages ?? [])
+				.flatMap((page) => page.analyses)
 				.filter((analysis) => analysis.status === "PROCESSING")
 				.map((analysis) => analysis.analysisId)
 				.join(","),
@@ -43,17 +50,20 @@ export function useAnalysisGenerationEvents(
 					}
 				},
 				onDeleted: ({ id }) => {
-					queryClient.setQueryData<AnalysisHistoryResponse>(
+					queryClient.setQueryData<AnalysisHistoryData>(
 						ANALYSIS_HISTORY_QUERY_KEY,
 						(current) => {
 							if (!current) return current;
 
-							const analyses = current.analyses.filter(
-								(analysis) => analysis.analysisId !== id,
-							);
-							return analyses.length === current.analyses.length
-								? current
-								: { ...current, analyses };
+							return {
+								...current,
+								pages: current.pages.map((page) => ({
+									...page,
+									analyses: page.analyses.filter(
+										(analysis) => analysis.analysisId !== id,
+									),
+								})),
+							};
 						},
 					);
 				},
@@ -70,29 +80,34 @@ function updateAnalysisStatus(
 	queryClient: QueryClient,
 	event: AnalysisGenerationStatusEvent,
 ) {
-	const current = queryClient.getQueryData<AnalysisHistoryResponse>(
+	const current = queryClient.getQueryData<AnalysisHistoryData>(
 		ANALYSIS_HISTORY_QUERY_KEY,
 	);
 	if (!current) return false;
 
-	const itemIndex = current.analyses.findIndex(
-		(analysis) => analysis.analysisId === event.id,
-	);
-	if (itemIndex < 0) return false;
+	let didApply = false;
+	const pages = current.pages.map((page) => {
+		const itemIndex = page.analyses.findIndex(
+			(analysis) => analysis.analysisId === event.id,
+		);
+		if (itemIndex < 0) return page;
 
-	const analyses = [...current.analyses];
-	analyses[itemIndex] = {
-		...analyses[itemIndex],
-		status: event.status,
-		failureReason: event.failureReason,
-	};
-	queryClient.setQueryData<AnalysisHistoryResponse>(
-		ANALYSIS_HISTORY_QUERY_KEY,
-		{
-			...current,
-			analyses,
-		},
-	);
+		didApply = true;
+		const analyses = [...page.analyses];
+		analyses[itemIndex] = {
+			...analyses[itemIndex],
+			status: event.status,
+			failureReason: event.failureReason,
+		};
+		return { ...page, analyses };
+	});
+
+	if (!didApply) return false;
+
+	queryClient.setQueryData<AnalysisHistoryData>(ANALYSIS_HISTORY_QUERY_KEY, {
+		...current,
+		pages,
+	});
 
 	return true;
 }

@@ -36,8 +36,8 @@ export function MyPage() {
 		isLoading: isGroupsLoading,
 		refetch: refetchFeedbackGroups,
 	} = useQuery({
-		queryKey: ["feedback-groups"],
-		queryFn: getFeedbackGroups,
+		queryKey: ["feedback-groups", "summary"],
+		queryFn: () => getFeedbackGroups({ page: 0, size: 100 }),
 	});
 	const {
 		data: analysisHistory,
@@ -45,8 +45,8 @@ export function MyPage() {
 		isLoading: isAnalysisLoading,
 		refetch: refetchAnalysisHistory,
 	} = useQuery({
-		queryKey: ["analysis-history"],
-		queryFn: getAnalysisHistory,
+		queryKey: ["analysis-history", "summary"],
+		queryFn: () => getAnalysisHistory({ page: 0, size: 1 }),
 	});
 	const {
 		data: coverLetters,
@@ -79,7 +79,7 @@ export function MyPage() {
 		(total, group) => total + group.answerCount,
 		0,
 	);
-	const analysisCount = analysisHistory?.analyses.length ?? 0;
+	const analysisCount = analysisHistory?.analysisCount ?? 0;
 	const coverLetterCount = coverLetters?.coverLetterCount ?? 0;
 	const userName = getCurrentUserName(currentUser);
 	const hasActivityError =
