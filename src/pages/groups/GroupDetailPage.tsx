@@ -241,7 +241,6 @@ export function GroupDetailPage() {
 						: !answer.retrospectiveCompleted,
 				);
 	const isAiAvailable =
-		!group?.linkActive &&
 		!hasNextPage &&
 		(group?.answerCount ?? 0) >= 3 &&
 		answers.every((answer) => answer.retrospectiveCompleted);
@@ -478,8 +477,8 @@ export function GroupDetailPage() {
 								style={{ color: "#EDF0FF" }}
 							>
 								피드백이 3개 이상 수집되고{"\n"}
-								수집이 종료된 후 모든 피드백의{"\n"}
-								회고가 완료되면 AI 인사이트 분석이 가능해요.
+								모든 피드백의 회고가 완료되면{"\n"}
+								AI 인사이트 분석이 가능해요.
 							</p>
 						</div>
 					) : null
