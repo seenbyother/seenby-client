@@ -8,3 +8,4 @@ export { Input } from "./Input";
 export { KebabMenu } from "./KebabMenu";
 export { KeywordChip } from "./KeywordChip";
 export { ProgressBar } from "./ProgressBar";
+export { Switch } from "./Switch";
