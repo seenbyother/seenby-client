@@ -17,6 +17,7 @@ import { GroupsPage } from "@/pages/groups/GroupsPage";
 import { HomePage } from "@/pages/home/HomePage";
 import LoginPage from "@/pages/login/LoginPage";
 import { MyPage } from "@/pages/mypage/MyPage";
+import { NotificationSettingsPage } from "@/pages/mypage/NotificationSettingsPage";
 import { OnboardingPage } from "@/pages/onboarding/OnboardingPage";
 
 export function AppRoutes() {
@@ -41,6 +42,10 @@ export function AppRoutes() {
 					<Route index element={<HomePage />} />
 					<Route path="/home" element={<HomePage />} />
 					<Route path="/mypage" element={<MyPage />} />
+					<Route
+						path="/settings/notifications"
+						element={<NotificationSettingsPage />}
+					/>
 					<Route path="/onboarding" element={<OnboardingPage />} />
 					<Route
 						path="/feedback/detail/:answerId"
