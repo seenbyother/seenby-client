@@ -113,7 +113,7 @@ function handleParsedResponse<TResponse>(
 	path: string,
 ) {
 	if (!response.ok) {
-		redirectByAuthStatus(response.status, path);
+		redirectByAuthStatus(response.status, path, responseBody);
 		const apiError = new ApiError(
 			response.status,
 			responseBody,
@@ -164,7 +164,11 @@ function getApiErrorMessage(responseBody: unknown) {
 	return undefined;
 }
 
-function redirectByAuthStatus(status: number, path: string) {
+function redirectByAuthStatus(
+	status: number,
+	path: string,
+	responseBody: unknown,
+) {
 	if (typeof window === "undefined") {
 		return;
 	}
@@ -180,9 +184,23 @@ function redirectByAuthStatus(status: number, path: string) {
 		return;
 	}
 
+	if (status === 403 && getApiStatusCodeString(responseBody) === "700-9") {
+		return;
+	}
+
 	if (status === 403 && !isCurrentUserPath && currentPath !== "/forbidden") {
 		window.location.replace("/forbidden");
 	}
+}
+
+function getApiStatusCodeString(responseBody: unknown) {
+	if (!responseBody || typeof responseBody !== "object") {
+		return undefined;
+	}
+
+	const body = responseBody as { statuscode?: unknown };
+
+	return typeof body.statuscode === "string" ? body.statuscode : undefined;
 }
 
 function isAuthTokenPath(path: string) {

@@ -192,6 +192,16 @@ export function MyPage() {
 					</section>
 
 					<section>
+						<SectionTitle>알림 설정</SectionTitle>
+						<div className="mt-3 overflow-hidden rounded-3xl bg-white px-4">
+							<AccountButton
+								label="알림 이메일 설정"
+								onClick={() => navigate("/settings/notifications")}
+							/>
+						</div>
+					</section>
+
+					<section>
 						<SectionTitle>계정 관리</SectionTitle>
 						<div className="mt-3 overflow-hidden rounded-3xl bg-white px-4">
 							<AccountButton
