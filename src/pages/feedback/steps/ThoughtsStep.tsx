@@ -87,7 +87,7 @@ export function ThoughtsStep({
 				<div
 					key={validationToast.key}
 					role="alert"
-					className="feedback-validation-toast fixed left-1/2 top-[calc(env(safe-area-inset-top)+12px)] z-[100] flex w-[calc(100%-32px)] max-w-[370px] items-center gap-3 rounded-2xl border border-[#FFE1E4] bg-white/95 px-4 py-3 shadow-[0_10px_30px_rgba(15,23,42,0.16)] backdrop-blur-md"
+					className="feedback-validation-toast fixed left-1/2 top-[calc(env(safe-area-inset-top)+24px)] z-[100] flex w-[calc(100%-32px)] max-w-[370px] items-center gap-3 rounded-2xl border border-[#FFE1E4] bg-white/95 px-4 py-3 shadow-[0_10px_30px_rgba(15,23,42,0.16)] backdrop-blur-md"
 				>
 					<span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#FFF0F1] text-[#E5484D]">
 						<svg
