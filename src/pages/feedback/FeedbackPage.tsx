@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { useSearchParams } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import {
 	getPublicFeedbackGroup,
 	submitPublicFeedbackAnswer,
@@ -22,6 +22,7 @@ type Step =
 	| "completion";
 
 export function FeedbackPage() {
+	const navigate = useNavigate();
 	const [searchParams] = useSearchParams();
 	const linkToken = searchParams.get("token") ?? "";
 
@@ -125,7 +126,7 @@ export function FeedbackPage() {
 				recipientName={recipientName}
 				groupName={groupName}
 				onAnonymous={() => setStep("nickname")}
-				onLogin={() => setStep("nickname")}
+				onLogin={() => navigate("/login")}
 			/>
 		);
 	}
