@@ -55,6 +55,7 @@ export function FeedbackDetailPage() {
 	] = useState<Record<number, string>>({});
 	const [editingExperienceFeedbackId, setEditingExperienceFeedbackId] =
 		useState<number | null>(null);
+	const [retrospectiveDraft, setRetrospectiveDraft] = useState("");
 	const [isSheetOpen, setIsSheetOpen] = useState(false);
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 	const [retrospectiveSaveError, setRetrospectiveSaveError] = useState<
@@ -70,6 +71,10 @@ export function FeedbackDetailPage() {
 		}) => saveFeedbackRetrospect(experienceFeedbackId, retrospect),
 		onSuccess: async (_data, variables) => {
 			setRetrospectiveSaveError(null);
+			setRetrospectivesByExperienceFeedbackId((current) => ({
+				...current,
+				[variables.experienceFeedbackId]: variables.retrospect ?? "",
+			}));
 			setIsSheetOpen(false);
 			setEditingExperienceFeedbackId(null);
 			trackEvent("retrospective_saved", {
@@ -113,6 +118,7 @@ export function FeedbackDetailPage() {
 
 		setRetrospectivesByExperienceFeedbackId((current) => {
 			const next = { ...current };
+			let didChange = false;
 
 			for (const experienceFeedback of data.experienceFeedbacks) {
 				if (
@@ -120,10 +126,11 @@ export function FeedbackDetailPage() {
 					experienceFeedback.retrospect !== undefined
 				) {
 					next[experienceFeedback.id] = experienceFeedback.retrospect ?? "";
+					didChange = true;
 				}
 			}
 
-			return next;
+			return didChange ? next : current;
 		});
 	}, [data]);
 
@@ -134,22 +141,25 @@ export function FeedbackDetailPage() {
 					(item) => item.id === editingExperienceFeedbackId,
 				) ?? null);
 	const activeRetrospective = activeExperienceFeedback
-		? (retrospectivesByExperienceFeedbackId[activeExperienceFeedback.id] ?? "")
+		? retrospectiveDraft
 		: "";
 
 	const openRetrospectiveEditor = (experienceFeedbackId: number) => {
 		setRetrospectiveSaveError(null);
+		setRetrospectiveDraft(
+			retrospectivesByExperienceFeedbackId[experienceFeedbackId] ??
+				data?.experienceFeedbacks.find(
+					(item) => item.id === experienceFeedbackId,
+				)?.retrospect ??
+				"",
+		);
 		setEditingExperienceFeedbackId(experienceFeedbackId);
 		setIsSheetOpen(true);
 	};
 
 	const updateRetrospective = (value: string) => {
 		if (editingExperienceFeedbackId === null) return;
-
-		setRetrospectivesByExperienceFeedbackId((current) => ({
-			...current,
-			[editingExperienceFeedbackId]: value,
-		}));
+		setRetrospectiveDraft(value);
 	};
 
 	const saveRetrospective = () => {
@@ -162,12 +172,9 @@ export function FeedbackDetailPage() {
 			return;
 		}
 
-		const retrospect =
-			retrospectivesByExperienceFeedbackId[editingExperienceFeedbackId] ?? "";
-
 		saveRetrospectMutation.mutate({
 			experienceFeedbackId: editingExperienceFeedbackId,
-			retrospect,
+			retrospect: retrospectiveDraft,
 		});
 	};
 

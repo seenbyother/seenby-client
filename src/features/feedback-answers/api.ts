@@ -36,14 +36,14 @@ export async function saveFeedbackRetrospect(
 	experienceFeedbackId: number,
 	retrospect: string | null,
 ) {
-	const response = await apiClient.put<ApiResponse<null>>(
+	const response = await apiClient.put<ApiResponse<null> | null | undefined>(
 		`/feedback-retrospects/${experienceFeedbackId}`,
 		{
 			body: { retrospect },
 		},
 	);
 
-	ensureApiSuccess(response);
+	if (response) ensureApiSuccess(response, ["200", "204"]);
 }
 
 export async function deleteFeedbackAnswer(answerId: number) {
