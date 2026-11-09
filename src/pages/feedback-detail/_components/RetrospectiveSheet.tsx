@@ -1,5 +1,5 @@
 import type { PointerEvent } from "react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import CheckIcon from "@/assets/feedback/check.svg?react";
 import CloseIcon from "@/assets/feedback/close.svg?react";
 import InfoIcon from "@/assets/feedback/info.svg?react";
@@ -16,6 +16,13 @@ interface RetrospectiveSheetProps {
 	errorMessage?: string | null;
 }
 
+type VisualViewportMetrics = {
+	height: number;
+	top: number;
+};
+
+const SHEET_HEIGHT = 280;
+
 export function RetrospectiveSheet({
 	isOpen,
 	experienceFeedback,
@@ -29,10 +36,50 @@ export function RetrospectiveSheet({
 	const [dragOffset, setDragOffset] = useState(0);
 	const [isDragging, setIsDragging] = useState(false);
 	const [isGuideOpen, setIsGuideOpen] = useState(false);
+	const [visualViewportMetrics, setVisualViewportMetrics] =
+		useState<VisualViewportMetrics | null>(null);
 	const dragStartYRef = useRef<number | null>(null);
 	const dragOffsetRef = useRef(0);
+	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const hasRetrospectiveContent = value.trim().length > 0;
 	const characterCount = value.length;
+
+	useEffect(() => {
+		if (!window.visualViewport) return;
+
+		const viewport = window.visualViewport;
+		let animationFrameId: number | null = null;
+		const applyViewportMetrics = () => {
+			animationFrameId = null;
+			const height = Math.round(Math.min(SHEET_HEIGHT, viewport.height));
+			const top = Math.round(
+				viewport.offsetTop + Math.max(0, viewport.height - height),
+			);
+			setVisualViewportMetrics((current) =>
+				current?.height === height && current.top === top
+					? current
+					: { height, top },
+			);
+		};
+		const updateViewportMetrics = () => {
+			if (animationFrameId !== null) {
+				cancelAnimationFrame(animationFrameId);
+			}
+			animationFrameId = requestAnimationFrame(applyViewportMetrics);
+		};
+
+		updateViewportMetrics();
+		viewport.addEventListener("resize", updateViewportMetrics);
+		viewport.addEventListener("scroll", updateViewportMetrics);
+
+		return () => {
+			if (animationFrameId !== null) {
+				cancelAnimationFrame(animationFrameId);
+			}
+			viewport.removeEventListener("resize", updateViewportMetrics);
+			viewport.removeEventListener("scroll", updateViewportMetrics);
+		};
+	}, []);
 
 	const closeGuide = () => {
 		setIsGuideOpen(false);
@@ -41,6 +88,7 @@ export function RetrospectiveSheet({
 	const closeSheet = () => {
 		if (isSaving) return;
 
+		textareaRef.current?.blur();
 		closeGuide();
 		onClose();
 	};
@@ -48,6 +96,7 @@ export function RetrospectiveSheet({
 	const saveSheet = () => {
 		if (isSaving) return;
 
+		textareaRef.current?.blur();
 		closeGuide();
 		onSave();
 	};
@@ -88,7 +137,7 @@ export function RetrospectiveSheet({
 		<section
 			aria-label="회고 작성하기"
 			className={[
-				"absolute bottom-0 left-0 z-30 flex h-[436px] w-full flex-col rounded-t-[40px] bg-white shadow-[0_-2px_6.2px_rgba(0,0,0,0.13)]",
+				"absolute bottom-0 left-0 z-30 flex h-[min(280px,100dvh)] w-full flex-col rounded-t-[40px] bg-white shadow-[0_-2px_6.2px_rgba(0,0,0,0.13)]",
 				isDragging
 					? "transition-none"
 					: "transition-transform duration-300 ease-out",
@@ -96,6 +145,9 @@ export function RetrospectiveSheet({
 				isSaving ? "cursor-wait" : "",
 			].join(" ")}
 			style={{
+				bottom: visualViewportMetrics ? "auto" : 0,
+				top: visualViewportMetrics?.top,
+				height: visualViewportMetrics?.height,
 				transform: isOpen ? `translateY(${dragOffset}px)` : "translateY(100%)",
 			}}
 		>
@@ -177,15 +229,20 @@ export function RetrospectiveSheet({
 				회고 내용
 			</label>
 			<textarea
+				ref={textareaRef}
 				id="retrospective-editor"
 				value={value}
 				onChange={(event) => onChange(event.target.value)}
 				placeholder="나의 회고를 작성해보세요."
-				className="mt-[30px] min-h-0 flex-1 w-full resize-none border-0 bg-transparent px-[39px] pb-2 text-[20px] leading-[1.5] text-[#4B5563] outline-none placeholder:text-[#D1D5DB]"
+				className="mt-[30px] min-h-0 w-full flex-1 resize-none border-0 bg-transparent px-[39px] pb-2 text-[20px] leading-[1.5] text-[#4B5563] outline-none [overflow-wrap:anywhere] placeholder:text-[#D1D5DB]"
 			/>
-			<p className="m-0 px-[39px] pb-8 text-right text-[13px] font-medium leading-none text-[#9CA3AF]">
+			<p className="m-0 px-[39px] pb-[max(12px,env(safe-area-inset-bottom))] text-right text-[13px] font-medium leading-none text-[#9CA3AF]">
 				{characterCount}자
 			</p>
+			<div
+				aria-hidden="true"
+				className="pointer-events-none absolute inset-x-0 top-full h-[100dvh] bg-white"
+			/>
 		</section>
 	);
 }

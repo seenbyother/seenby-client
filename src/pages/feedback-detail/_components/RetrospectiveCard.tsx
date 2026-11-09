@@ -20,7 +20,7 @@ export function RetrospectiveCard({
 	const characterCount = retrospective.length;
 
 	return (
-		<article className="rounded-[20px] bg-white p-4">
+		<article className="min-w-0 rounded-[20px] bg-white p-4">
 			<h2 className="m-0 text-center text-[16px] font-bold leading-normal">
 				나의 회고 {experienceNumber}
 			</h2>
@@ -46,7 +46,7 @@ export function RetrospectiveCard({
 					].join(" ")}
 				>
 					{hasRetrospective ? (
-						<span className="block whitespace-pre-wrap break-keep">
+						<span className="block w-full whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
 							{retrospective}
 						</span>
 					) : (
