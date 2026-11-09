@@ -40,6 +40,13 @@ export type CoverLetterGenerationStatusEvent = {
 	failureReason: string | null;
 };
 
+export type CoverLetterGenerationStatusResponse = {
+	id: number;
+	status: CoverLetterGenerationStatus;
+	completedAt: string | null;
+	failureReason: string | null;
+};
+
 export type CoverLetterDeletedEvent = {
 	resourceType: "COVER_LETTER";
 	id: number;
@@ -62,6 +69,15 @@ export async function getCoverLetterDetail(coverLetterId: number) {
 	const response = await apiClient.get<
 		ApiResponse<CoverLetterDetail> | CoverLetterDetail
 	>(`/cover-letters/${coverLetterId}`);
+
+	return unwrapApiData(response);
+}
+
+export async function getCoverLetterGenerationStatus(coverLetterId: number) {
+	const response = await apiClient.get<
+		| ApiResponse<CoverLetterGenerationStatusResponse>
+		| CoverLetterGenerationStatusResponse
+	>(`/cover-letters/${coverLetterId}/status`);
 
 	return unwrapApiData(response);
 }

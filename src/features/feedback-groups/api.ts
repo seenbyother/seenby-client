@@ -224,6 +224,13 @@ export type AnalysisGenerationStatusEvent = {
 	failureReason: string | null;
 };
 
+export type AnalysisGenerationStatusResponse = {
+	analysisId: number;
+	status: AnalysisGenerationStatus;
+	analyzedAt: string | null;
+	failureReason: string | null;
+};
+
 export type AnalysisDeletedEvent = {
 	resourceType: "AI_ANALYSIS";
 	id: number;
@@ -242,6 +249,14 @@ export async function getAnalysisHistory(query: PageQuery = {}) {
 	const response = await apiClient.get<
 		ApiResponse<AnalysisHistoryResponse> | AnalysisHistoryResponse
 	>("/feedback-groups/analysis", { query });
+
+	return unwrapApiData(response);
+}
+
+export async function getAnalysisGenerationStatus(analysisId: number) {
+	const response = await apiClient.get<
+		ApiResponse<AnalysisGenerationStatusResponse>
+	>(`/feedback-groups/analysis/${analysisId}/status`);
 
 	return unwrapApiData(response);
 }
