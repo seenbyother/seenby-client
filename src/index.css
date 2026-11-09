@@ -45,6 +45,16 @@ select {
 	min-height: 100svh;
 }
 
+.retrospective-sheet {
+	height: min(280px, 100dvh);
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.retrospective-sheet {
+		height: min(436px, 100dvh);
+	}
+}
+
 .generation-processing-card {
 	position: relative;
 	isolation: isolate;

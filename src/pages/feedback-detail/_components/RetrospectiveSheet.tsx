@@ -1,5 +1,5 @@
 import type { PointerEvent } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import CheckIcon from "@/assets/feedback/check.svg?react";
 import CloseIcon from "@/assets/feedback/close.svg?react";
 import InfoIcon from "@/assets/feedback/info.svg?react";
@@ -21,7 +21,9 @@ type VisualViewportMetrics = {
 	top: number;
 };
 
-const SHEET_HEIGHT = 280;
+const MOBILE_SHEET_HEIGHT = 280;
+const DESKTOP_SHEET_HEIGHT = 436;
+const DESKTOP_POINTER_QUERY = "(hover: hover) and (pointer: fine)";
 
 export function RetrospectiveSheet({
 	isOpen,
@@ -44,14 +46,29 @@ export function RetrospectiveSheet({
 	const hasRetrospectiveContent = value.trim().length > 0;
 	const characterCount = value.length;
 
+	useLayoutEffect(() => {
+		if (!isOpen) return;
+
+		const textarea = textareaRef.current;
+		if (!textarea) return;
+
+		textarea.focus({ preventScroll: true });
+		const cursorPosition = textarea.value.length;
+		textarea.setSelectionRange(cursorPosition, cursorPosition);
+	}, [isOpen]);
+
 	useEffect(() => {
 		if (!window.visualViewport) return;
 
 		const viewport = window.visualViewport;
+		const desktopPointer = window.matchMedia(DESKTOP_POINTER_QUERY);
 		let animationFrameId: number | null = null;
 		const applyViewportMetrics = () => {
 			animationFrameId = null;
-			const height = Math.round(Math.min(SHEET_HEIGHT, viewport.height));
+			const sheetHeight = desktopPointer.matches
+				? DESKTOP_SHEET_HEIGHT
+				: MOBILE_SHEET_HEIGHT;
+			const height = Math.round(Math.min(sheetHeight, viewport.height));
 			const top = Math.round(
 				viewport.offsetTop + Math.max(0, viewport.height - height),
 			);
@@ -71,6 +88,7 @@ export function RetrospectiveSheet({
 		updateViewportMetrics();
 		viewport.addEventListener("resize", updateViewportMetrics);
 		viewport.addEventListener("scroll", updateViewportMetrics);
+		desktopPointer.addEventListener("change", updateViewportMetrics);
 
 		return () => {
 			if (animationFrameId !== null) {
@@ -78,6 +96,7 @@ export function RetrospectiveSheet({
 			}
 			viewport.removeEventListener("resize", updateViewportMetrics);
 			viewport.removeEventListener("scroll", updateViewportMetrics);
+			desktopPointer.removeEventListener("change", updateViewportMetrics);
 		};
 	}, []);
 
@@ -137,7 +156,7 @@ export function RetrospectiveSheet({
 		<section
 			aria-label="회고 작성하기"
 			className={[
-				"absolute bottom-0 left-0 z-30 flex h-[min(280px,100dvh)] w-full flex-col rounded-t-[40px] bg-white shadow-[0_-2px_6.2px_rgba(0,0,0,0.13)]",
+				"retrospective-sheet absolute bottom-0 left-0 z-30 flex w-full flex-col rounded-t-[40px] bg-white shadow-[0_-2px_6.2px_rgba(0,0,0,0.13)]",
 				isDragging
 					? "transition-none"
 					: "transition-transform duration-300 ease-out",
