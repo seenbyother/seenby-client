@@ -3,11 +3,13 @@ import { BrowserRouter } from "react-router";
 import { QueryProvider } from "@/app/providers/QueryProvider";
 import { AppRoutes } from "@/routes";
 import { AnalyticsRouteTracker } from "@/shared/analytics";
+import { DocumentTitle } from "@/shared/components/DocumentTitle";
 
 export default function App() {
 	return (
 		<QueryProvider>
 			<BrowserRouter>
+				<DocumentTitle />
 				<AnalyticsRouteTracker />
 				<div className="w-full min-h-screen text-left" data-clarity-mask="true">
 					<Sentry.ErrorBoundary fallback={<ErrorFallback />}>
