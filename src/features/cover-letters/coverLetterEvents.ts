@@ -7,8 +7,10 @@ import type {
 } from "./api";
 
 type CoverLetterEventHandlers = {
+	onOpen: () => void;
 	onStatus: (event: CoverLetterGenerationStatusEvent) => boolean;
 	onDeleted: (event: CoverLetterDeletedEvent) => void;
+	onError: () => void;
 };
 
 const COVER_LETTER_GENERATION_STATUSES = new Set<CoverLetterGenerationStatus>([
@@ -19,7 +21,7 @@ const COVER_LETTER_GENERATION_STATUSES = new Set<CoverLetterGenerationStatus>([
 
 export function subscribeToCoverLetterGenerationEvents(
 	coverLetterId: number,
-	{ onStatus, onDeleted }: CoverLetterEventHandlers,
+	{ onOpen, onStatus, onDeleted, onError }: CoverLetterEventHandlers,
 ) {
 	const eventSource = new EventSource(
 		`${API_BASE_URL}/cover-letters/${coverLetterId}/events`,
@@ -43,13 +45,22 @@ export function subscribeToCoverLetterGenerationEvents(
 		onDeleted(payload);
 		eventSource.close();
 	};
+	const handleOpen = () => onOpen();
+	const handleError = () => {
+		eventSource.close();
+		onError();
+	};
 
+	eventSource.addEventListener("open", handleOpen);
 	eventSource.addEventListener("generation-status", handleStatus);
 	eventSource.addEventListener("deleted", handleDeleted);
+	eventSource.addEventListener("error", handleError);
 
 	return () => {
+		eventSource.removeEventListener("open", handleOpen);
 		eventSource.removeEventListener("generation-status", handleStatus);
 		eventSource.removeEventListener("deleted", handleDeleted);
+		eventSource.removeEventListener("error", handleError);
 		eventSource.close();
 	};
 }

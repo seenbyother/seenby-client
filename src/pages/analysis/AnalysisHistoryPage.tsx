@@ -10,6 +10,7 @@ import {
 	getAnalysisHistory,
 } from "@/features/feedback-groups/api";
 import { useAnalysisGenerationEvents } from "@/features/feedback-groups/useAnalysisGenerationEvents";
+import type { GenerationRecoveryPhase } from "@/shared/api";
 import { BottomNavigation, Header } from "@/shared/components";
 import { useInfiniteScrollSentinel } from "@/shared/hooks/useInfiniteScrollSentinel";
 import { formatYearMonthDay } from "@/shared/utils/date";
@@ -40,12 +41,24 @@ export function AnalysisHistoryPage() {
 		queryFn: getCoverLetters,
 		enabled: !isAnalysisTab,
 	});
-	useAnalysisGenerationEvents(analysisQuery.data, isAnalysisTab);
-	useCoverLetterGenerationEvents(coverLettersQuery.data, !isAnalysisTab);
+	const analysisEvents = useAnalysisGenerationEvents(
+		analysisQuery.data,
+		isAnalysisTab,
+	);
+	const coverLetterEvents = useCoverLetterGenerationEvents(
+		coverLettersQuery.data,
+		!isAnalysisTab,
+	);
 	const activeQuery = isAnalysisTab ? analysisQuery : coverLettersQuery;
 	const historyItems = isAnalysisTab
-		? getAnalysisHistoryItems(analysisQuery.data?.pages)
-		: getCoverLetterHistoryItems(coverLettersQuery.data);
+		? getAnalysisHistoryItems(
+				analysisQuery.data?.pages,
+				analysisEvents.recoveryById,
+			)
+		: getCoverLetterHistoryItems(
+				coverLettersQuery.data,
+				coverLetterEvents.recoveryById,
+			);
 	const sentinelRef = useInfiniteScrollSentinel({
 		hasNextPage: isAnalysisTab && (analysisQuery.hasNextPage ?? false),
 		isFetchingNextPage: analysisQuery.isFetchingNextPage,
@@ -124,7 +137,15 @@ export function AnalysisHistoryPage() {
 								statusTone={item.statusTone}
 								isProcessing={item.isProcessing}
 								disabled={item.disabled}
-								dimmed={item.dimmed}
+								message={item.message}
+								actionLabel={item.actionLabel}
+								onAction={
+									item.actionLabel
+										? () => {
+												if (item.actionHref) navigate(item.actionHref);
+											}
+										: undefined
+								}
 								onClick={() => {
 									if (!item.disabled) {
 										navigate(item.href);
@@ -158,11 +179,14 @@ type VisibleHistoryItem = {
 	statusTone?: "blue" | "gray" | "red";
 	isProcessing?: boolean;
 	disabled?: boolean;
-	dimmed?: boolean;
+	message?: string;
+	actionLabel?: string;
+	actionHref?: string;
 };
 
 function getAnalysisHistoryItems(
 	pages: AnalysisHistoryResponse[] | undefined,
+	recoveryById: Partial<Record<number, GenerationRecoveryPhase>>,
 ): VisibleHistoryItem[] {
 	if (!pages) {
 		return [];
@@ -170,87 +194,123 @@ function getAnalysisHistoryItems(
 
 	return pages
 		.flatMap((page) => page.analyses)
-		.map((item) => ({
-			id: item.analysisId,
-			title: item.group.title,
-			dateLabel: formatYearMonthDay(item.analyzedAt ?? item.createdAt),
-			href: `/analysis/ai/${item.analysisId}`,
-			statusLabel: getAnalysisStatusLabel(item.status),
-			statusTone: getAnalysisStatusTone(item.status),
-			isProcessing: item.status === "PROCESSING",
-			disabled: item.status !== "COMPLETED",
-			dimmed: item.status === "FAILED",
-		}));
-}
+		.map((item) => {
+			const presentation = getGenerationPresentation(
+				item.status,
+				item.failureReason,
+				recoveryById[item.analysisId],
+				`/groups/${item.group.id}/analysis?mode=analysis-regenerate&analysisId=${item.analysisId}`,
+			);
 
-function getAnalysisStatusLabel(
-	status: AnalysisHistoryResponse["analyses"][number]["status"],
-) {
-	switch (status) {
-		case "PROCESSING":
-			return "생성 중";
-		case "FAILED":
-			return "실패";
-		default:
-			return "완료";
-	}
-}
-
-function getAnalysisStatusTone(
-	status: AnalysisHistoryResponse["analyses"][number]["status"],
-): VisibleHistoryItem["statusTone"] {
-	switch (status) {
-		case "PROCESSING":
-			return "blue";
-		case "FAILED":
-			return "red";
-		default:
-			return "gray";
-	}
+			return {
+				id: item.analysisId,
+				title: item.group.title,
+				dateLabel: formatYearMonthDay(item.analyzedAt ?? item.createdAt),
+				href: `/analysis/ai/${item.analysisId}`,
+				...presentation,
+			};
+		});
 }
 
 function getCoverLetterHistoryItems(
 	data: CoverLettersResponse | undefined,
+	recoveryById: Partial<Record<number, GenerationRecoveryPhase>>,
 ): VisibleHistoryItem[] {
 	if (!data) {
 		return [];
 	}
 
-	return data.coverLetters.map((item) => ({
-		id: item.id,
-		title: item.feedbackGroupName,
-		dateLabel: formatYearMonthDay(item.completedAt ?? item.createdAt),
-		href: `/cover-letters/${item.id}`,
-		statusLabel: getCoverLetterStatusLabel(item.status),
-		statusTone: getCoverLetterStatusTone(item.status),
-		isProcessing: item.status === "PROCESSING",
-		disabled: item.status !== "COMPLETED",
-		dimmed: item.status === "FAILED",
-	}));
+	return data.coverLetters.map((item) => {
+		const presentation = getGenerationPresentation(
+			item.status,
+			item.failureReason,
+			recoveryById[item.id],
+			`/groups/${item.feedbackGroupId}/analysis?mode=cover-letter-create-another`,
+		);
+
+		return {
+			id: item.id,
+			title: item.feedbackGroupName,
+			dateLabel: formatYearMonthDay(item.completedAt ?? item.createdAt),
+			href: `/cover-letters/${item.id}`,
+			...presentation,
+		};
+	});
 }
 
-function getCoverLetterStatusLabel(
-	status: CoverLettersResponse["coverLetters"][number]["status"],
-) {
-	switch (status) {
-		case "PROCESSING":
-			return "생성 중";
-		case "FAILED":
-			return "실패";
-		default:
-			return "완료";
+function getGenerationPresentation(
+	status: "PROCESSING" | "COMPLETED" | "FAILED",
+	failureReason: string | null | undefined,
+	recoveryPhase: GenerationRecoveryPhase | undefined,
+	regenerationHref: string,
+): Pick<
+	VisibleHistoryItem,
+	| "statusLabel"
+	| "statusTone"
+	| "isProcessing"
+	| "disabled"
+	| "message"
+	| "actionLabel"
+	| "actionHref"
+> {
+	if (recoveryPhase === "unavailable") {
+		return {
+			statusLabel: "확인 불가",
+			statusTone: "red",
+			isProcessing: false,
+			disabled: true,
+			message: "삭제되었거나 결과를 확인할 수 없어요.",
+		};
 	}
-}
 
-function getCoverLetterStatusTone(
-	status: CoverLettersResponse["coverLetters"][number]["status"],
-): VisibleHistoryItem["statusTone"] {
-	switch (status) {
-		case "PROCESSING":
-			return "blue";
-		case "FAILED":
-			return "red";
-		default:
-			return "gray";
+	if (status === "FAILED") {
+		return {
+			statusLabel: "실패",
+			statusTone: "red",
+			isProcessing: false,
+			disabled: true,
+			message: failureReason?.trim()
+				? failureReason
+				: "생성에 실패했어요. 다시 요청해주세요.",
+			actionLabel: "생성 다시 요청",
+			actionHref: regenerationHref,
+		};
 	}
+
+	if (status === "PROCESSING") {
+		const isPaused = recoveryPhase === "paused";
+		const isResumed = recoveryPhase === "resumed";
+		const isRecovering =
+			recoveryPhase === "checking" || recoveryPhase === "waiting";
+		if (isPaused) {
+			return {
+				statusLabel: "오류",
+				statusTone: "red",
+				isProcessing: false,
+				disabled: true,
+				message: "오류를 복구하지 못했어요. 다시 생성해주세요.",
+				actionLabel: "다시 생성",
+				actionHref: regenerationHref,
+			};
+		}
+
+		return {
+			statusLabel: isRecovering ? "복구 중" : isResumed ? "작성 중" : "생성 중",
+			statusTone: "blue",
+			isProcessing: true,
+			disabled: true,
+			message: isRecovering
+				? "오류가 발생했어요. 복구하는 중이에요."
+				: isResumed
+					? "복구됐어요. 계속 작성 중이에요."
+					: undefined,
+		};
+	}
+
+	return {
+		statusLabel: "완료",
+		statusTone: "gray",
+		isProcessing: false,
+		disabled: false,
+	};
 }

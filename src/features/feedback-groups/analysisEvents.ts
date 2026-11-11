@@ -7,8 +7,10 @@ import type {
 } from "./api";
 
 type AnalysisEventHandlers = {
+	onOpen: () => void;
 	onStatus: (event: AnalysisGenerationStatusEvent) => void;
 	onDeleted: (event: AnalysisDeletedEvent) => void;
+	onError: () => void;
 };
 
 const ANALYSIS_GENERATION_STATUSES = new Set<AnalysisGenerationStatus>([
@@ -19,7 +21,7 @@ const ANALYSIS_GENERATION_STATUSES = new Set<AnalysisGenerationStatus>([
 
 export function subscribeToAnalysisGenerationEvents(
 	analysisId: number,
-	{ onStatus, onDeleted }: AnalysisEventHandlers,
+	{ onOpen, onStatus, onDeleted, onError }: AnalysisEventHandlers,
 ) {
 	const eventSource = new EventSource(
 		`${API_BASE_URL}/feedback-groups/analysis/${analysisId}/events`,
@@ -41,13 +43,22 @@ export function subscribeToAnalysisGenerationEvents(
 		onDeleted(payload);
 		eventSource.close();
 	};
+	const handleOpen = () => onOpen();
+	const handleError = () => {
+		eventSource.close();
+		onError();
+	};
 
+	eventSource.addEventListener("open", handleOpen);
 	eventSource.addEventListener("generation-status", handleStatus);
 	eventSource.addEventListener("deleted", handleDeleted);
+	eventSource.addEventListener("error", handleError);
 
 	return () => {
+		eventSource.removeEventListener("open", handleOpen);
 		eventSource.removeEventListener("generation-status", handleStatus);
 		eventSource.removeEventListener("deleted", handleDeleted);
+		eventSource.removeEventListener("error", handleError);
 		eventSource.close();
 	};
 }
