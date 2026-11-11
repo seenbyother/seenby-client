@@ -45,6 +45,16 @@ select {
 	min-height: 100svh;
 }
 
+.retrospective-sheet {
+	height: min(280px, 100dvh);
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.retrospective-sheet {
+		height: min(436px, 100dvh);
+	}
+}
+
 .generation-processing-card {
 	position: relative;
 	isolation: isolate;
@@ -73,8 +83,46 @@ select {
 	}
 }
 
+.feedback-validation-toast {
+	will-change: transform, opacity, filter;
+	animation:
+		feedback-validation-toast-in 380ms cubic-bezier(0.16, 1, 0.3, 1) both,
+		feedback-validation-toast-out 220ms ease-in 2.14s forwards;
+}
+
+@keyframes feedback-validation-toast-in {
+	from {
+		opacity: 0;
+		filter: blur(5px);
+		transform: translate(-50%, -22px) scale(0.96);
+	}
+
+	to {
+		opacity: 1;
+		filter: blur(0);
+		transform: translate(-50%, 0) scale(1);
+	}
+}
+
+@keyframes feedback-validation-toast-out {
+	from {
+		opacity: 1;
+		transform: translate(-50%, 0) scale(1);
+	}
+
+	to {
+		opacity: 0;
+		transform: translate(-50%, -6px) scale(0.99);
+	}
+}
+
 @media (prefers-reduced-motion: reduce) {
 	.generation-processing-card::after {
 		display: none;
+	}
+
+	.feedback-validation-toast {
+		animation: none;
+		transform: translateX(-50%);
 	}
 }

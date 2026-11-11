@@ -156,13 +156,13 @@ export function CoverLetterDetailPage() {
 					{categoryLabel} 역량이 잘 드러난{"\n"}자기소개서가 완성됐어요
 				</h1>
 
-				<section className="relative mt-6 h-[118px] overflow-hidden rounded-[22px] border border-[#DBEAFE] bg-[#EEF6FF] shadow-[0_4px_7px_rgba(0,0,0,0.05)]">
-					<div className="absolute left-[17px] top-[17px] z-10 flex w-[calc(100%-124px)] max-w-[241px] min-w-0 flex-col gap-[3px]">
+				<section className="relative mt-6 min-h-[118px] overflow-hidden rounded-[22px] border border-[#DBEAFE] bg-[#EEF6FF] py-[17px] pl-[17px] pr-[112px] shadow-[0_4px_7px_rgba(0,0,0,0.05)]">
+					<div className="relative z-10 flex min-w-0 flex-col gap-[3px]">
 						<div className="flex min-w-0 flex-col gap-[3px]">
 							<p className="m-0 text-[13px] font-bold leading-[18px] text-[#0073FF]">
 								이 경험에 집중했어요
 							</p>
-							<p className="m-0 overflow-hidden text-ellipsis whitespace-nowrap text-[22px] font-bold leading-[28px] text-[#111827]">
+							<p className="m-0 whitespace-normal break-keep text-[22px] font-bold leading-[28px] text-[#111827] [overflow-wrap:anywhere] [text-wrap:balance]">
 								{coverLetter.categoryTitle}
 							</p>
 						</div>
@@ -178,7 +178,7 @@ export function CoverLetterDetailPage() {
 					<img
 						src={chTextImage}
 						alt=""
-						className="absolute right-[28px] top-[13px] h-[77px] w-[62px] object-contain"
+						className="absolute right-[18px] top-1/2 h-[calc(100%-26px)] min-h-[77px] max-h-[104px] w-[76px] -translate-y-1/2 object-contain"
 					/>
 				</section>
 

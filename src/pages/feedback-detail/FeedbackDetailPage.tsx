@@ -55,6 +55,7 @@ export function FeedbackDetailPage() {
 	] = useState<Record<number, string>>({});
 	const [editingExperienceFeedbackId, setEditingExperienceFeedbackId] =
 		useState<number | null>(null);
+	const [retrospectiveDraft, setRetrospectiveDraft] = useState("");
 	const [isSheetOpen, setIsSheetOpen] = useState(false);
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 	const [retrospectiveSaveError, setRetrospectiveSaveError] = useState<
@@ -70,6 +71,10 @@ export function FeedbackDetailPage() {
 		}) => saveFeedbackRetrospect(experienceFeedbackId, retrospect),
 		onSuccess: async (_data, variables) => {
 			setRetrospectiveSaveError(null);
+			setRetrospectivesByExperienceFeedbackId((current) => ({
+				...current,
+				[variables.experienceFeedbackId]: variables.retrospect ?? "",
+			}));
 			setIsSheetOpen(false);
 			setEditingExperienceFeedbackId(null);
 			trackEvent("retrospective_saved", {
@@ -123,6 +128,7 @@ export function FeedbackDetailPage() {
 
 		setRetrospectivesByExperienceFeedbackId((current) => {
 			const next = { ...current };
+			let didChange = false;
 
 			for (const experienceFeedback of data.experienceFeedbacks) {
 				if (
@@ -130,10 +136,11 @@ export function FeedbackDetailPage() {
 					experienceFeedback.retrospect !== undefined
 				) {
 					next[experienceFeedback.id] = experienceFeedback.retrospect ?? "";
+					didChange = true;
 				}
 			}
 
-			return next;
+			return didChange ? next : current;
 		});
 	}, [data]);
 
@@ -144,22 +151,25 @@ export function FeedbackDetailPage() {
 					(item) => item.id === editingExperienceFeedbackId,
 				) ?? null);
 	const activeRetrospective = activeExperienceFeedback
-		? (retrospectivesByExperienceFeedbackId[activeExperienceFeedback.id] ?? "")
+		? retrospectiveDraft
 		: "";
 
 	const openRetrospectiveEditor = (experienceFeedbackId: number) => {
 		setRetrospectiveSaveError(null);
+		setRetrospectiveDraft(
+			retrospectivesByExperienceFeedbackId[experienceFeedbackId] ??
+				data?.experienceFeedbacks.find(
+					(item) => item.id === experienceFeedbackId,
+				)?.retrospect ??
+				"",
+		);
 		setEditingExperienceFeedbackId(experienceFeedbackId);
 		setIsSheetOpen(true);
 	};
 
 	const updateRetrospective = (value: string) => {
 		if (editingExperienceFeedbackId === null) return;
-
-		setRetrospectivesByExperienceFeedbackId((current) => ({
-			...current,
-			[editingExperienceFeedbackId]: value,
-		}));
+		setRetrospectiveDraft(value);
 	};
 
 	const saveRetrospective = () => {
@@ -172,12 +182,9 @@ export function FeedbackDetailPage() {
 			return;
 		}
 
-		const retrospect =
-			retrospectivesByExperienceFeedbackId[editingExperienceFeedbackId] ?? "";
-
 		saveRetrospectMutation.mutate({
 			experienceFeedbackId: editingExperienceFeedbackId,
-			retrospect,
+			retrospect: retrospectiveDraft,
 		});
 	};
 
@@ -262,17 +269,17 @@ export function FeedbackDetailPage() {
 				/>
 			}
 		>
-			<section className="mb-6 flex items-end justify-between">
-				<h1 className="m-0 text-[24px] font-bold leading-none">
+			<section className="mb-6 flex min-w-0 items-end justify-between gap-3">
+				<h1 className="m-0 min-w-0 break-words text-[24px] font-bold leading-tight [overflow-wrap:anywhere]">
 					{data.reviewerName} 님의 피드백
 				</h1>
-				<p className="m-0 text-center text-[12px] leading-none text-[#696969]">
+				<p className="m-0 shrink-0 text-center text-[12px] leading-none text-[#696969]">
 					{submittedDate}
 				</p>
 			</section>
 
-			<section className="rounded-[20px] bg-white p-4">
-				<h2 className="m-0 text-[16px] font-bold leading-normal">
+			<section className="min-w-0 rounded-[20px] bg-white p-4">
+				<h2 className="m-0 break-words text-[16px] font-bold leading-normal [overflow-wrap:anywhere]">
 					{recipientName} 님에게 어울리는 단어
 				</h2>
 				{data.keywords.length === 0 ? (
@@ -280,7 +287,7 @@ export function FeedbackDetailPage() {
 						선택된 단어가 없어요
 					</p>
 				) : (
-					<div className="mt-3 grid grid-cols-4 gap-x-2 gap-y-3">
+					<div className="mt-3 grid min-w-0 grid-cols-2 gap-x-2 gap-y-3 min-[360px]:grid-cols-4">
 						{data.keywords.map((keyword) => (
 							<KeywordBadge key={keyword} keyword={keyword} />
 						))}
@@ -350,7 +357,7 @@ function KeywordBadge({ keyword }: { keyword: string }) {
 
 	return (
 		<span
-			className="flex h-8 min-w-0 items-center justify-center whitespace-nowrap rounded-[20px] border border-[rgba(0,115,255,0.1)] bg-[rgba(0,115,255,0.05)] px-1 font-semibold leading-none text-[#0073FF]"
+			className="flex h-8 min-w-0 items-center justify-center overflow-hidden text-ellipsis whitespace-nowrap rounded-[20px] border border-[rgba(0,115,255,0.1)] bg-[rgba(0,115,255,0.05)] px-1 font-semibold leading-none text-[#0073FF]"
 			style={{ fontSize }}
 			title={label}
 		>
@@ -385,15 +392,17 @@ function FeedbackDetailLayout({
 	rightAction,
 }: FeedbackDetailLayoutProps) {
 	return (
-		<main className="min-h-screen bg-[#F8F8F8] text-left text-black">
-			<div className="relative mx-auto h-[100svh] w-full max-w-[402px] overflow-hidden bg-[#F8F8F8]">
-				<div className="h-full overflow-y-auto pb-[124px]">
+		<main className="min-h-[100svh] overflow-x-hidden bg-[#F8F8F8] text-left text-black">
+			<div className="relative mx-auto h-[100dvh] w-full max-w-[402px] overflow-hidden bg-[#F8F8F8]">
+				<div className="h-full overflow-x-hidden overflow-y-auto pb-[124px]">
 					<Header
 						onBack={onBack}
 						rightAction={rightAction}
 						withBottomSpacing={false}
 					/>
-					<div className="px-[19px] pt-4">{children}</div>
+					<div className="min-w-0 px-[19px] pt-4 [overflow-wrap:anywhere]">
+						{children}
+					</div>
 				</div>
 				{sheet}
 			</div>
