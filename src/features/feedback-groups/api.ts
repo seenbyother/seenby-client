@@ -39,6 +39,7 @@ export type FeedbackAnswerSummary = {
 	feedbackGroupId: number;
 	reviewerName: string;
 	selected: boolean;
+	isRead: boolean;
 	retrospectiveCompleted: boolean;
 	submittedAt: string;
 	createdAt: string;

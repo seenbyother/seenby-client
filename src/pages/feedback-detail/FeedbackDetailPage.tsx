@@ -111,6 +111,16 @@ export function FeedbackDetailPage() {
 			return;
 		}
 
+		queryClient.invalidateQueries({
+			queryKey: ["feedback-group", data.feedbackGroupId],
+		});
+	}, [data, queryClient]);
+
+	useEffect(() => {
+		if (!data) {
+			return;
+		}
+
 		setRetrospectivesByExperienceFeedbackId((current) => {
 			const next = { ...current };
 

@@ -42,7 +42,7 @@ export function NotificationToggleSection({
 				label="야간 수신"
 				description={`${settings.nightStart}~${settings.nightEnd}에도 바로 받아요`}
 				checked={settings.nightEmailEnabled}
-				disabled={nightToggleMutation.isPending}
+				disabled={!settings.emailVerified || nightToggleMutation.isPending}
 				onToggle={(next) =>
 					nightToggleMutation.mutate({ nightEmailEnabled: next })
 				}

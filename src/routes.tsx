@@ -18,6 +18,7 @@ import { HomePage } from "@/pages/home/HomePage";
 import LoginPage from "@/pages/login/LoginPage";
 import { MyPage } from "@/pages/mypage/MyPage";
 import { NotificationSettingsPage } from "@/pages/mypage/NotificationSettingsPage";
+import { NotFoundPage } from "@/pages/not-found/NotFoundPage";
 import { OnboardingPage } from "@/pages/onboarding/OnboardingPage";
 
 export function AppRoutes() {
@@ -79,6 +80,8 @@ export function AppRoutes() {
 						element={<FeedbackGroupCreatePage />}
 					/>
 				</Route>
+
+				<Route path="*" element={<NotFoundPage />} />
 			</Route>
 		</Routes>
 	);
