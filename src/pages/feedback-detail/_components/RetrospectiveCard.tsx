@@ -18,9 +18,15 @@ export function RetrospectiveCard({
 	const hasRetrospective = retrospective.trim().length > 0;
 	const experienceNumber = experienceFeedback.displayOrder + 1;
 	const characterCount = retrospective.length;
+	const isCreateAction = !hasRetrospective && !isEditing;
+	const actionLabel = isEditing
+		? "저장하기"
+		: hasRetrospective
+			? "수정하기"
+			: "회고 작성하기";
 
 	return (
-		<article className="rounded-[20px] bg-white p-4">
+		<article className="min-w-0 rounded-[20px] bg-white p-4">
 			<h2 className="m-0 text-center text-[16px] font-bold leading-normal">
 				나의 회고 {experienceNumber}
 			</h2>
@@ -32,9 +38,9 @@ export function RetrospectiveCard({
 					<button
 						type="button"
 						onClick={onToggleEdit}
-						className="cursor-pointer border-0 bg-transparent p-0 text-[14px] leading-[1.252] text-[#696969] underline underline-offset-2"
+						className={`cursor-pointer border-0 bg-transparent p-0 text-[14px] leading-[1.252] underline underline-offset-2 ${isCreateAction ? "text-[#0073FF]" : "text-[#696969]"}`}
 					>
-						{isEditing ? "저장하기" : "수정하기"}
+						{actionLabel}
 					</button>
 				</div>
 				<button
@@ -46,7 +52,7 @@ export function RetrospectiveCard({
 					].join(" ")}
 				>
 					{hasRetrospective ? (
-						<span className="block whitespace-pre-wrap break-keep">
+						<span className="block w-full whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
 							{retrospective}
 						</span>
 					) : (

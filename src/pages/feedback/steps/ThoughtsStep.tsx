@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import IcCheck from "@/assets/feedback/check.svg?react";
 import { Button, Header, ProgressBar } from "@/shared/components";
 import { WritingGuideModal } from "../WritingGuideModal";
@@ -18,6 +18,8 @@ function autoResize(el: HTMLTextAreaElement) {
 	el.style.height = `${el.scrollHeight}px`;
 }
 
+const VALIDATION_TOAST_DURATION_MS = 2_400;
+
 export function ThoughtsStep({
 	recipientName,
 	experiences,
@@ -29,12 +31,84 @@ export function ThoughtsStep({
 }: ThoughtsStepProps) {
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const [isGuideOpen, setIsGuideOpen] = useState(false);
+	const [validationToast, setValidationToast] = useState<{
+		key: number;
+		message: string;
+	} | null>(null);
+	const validationToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+		null,
+	);
 
 	const filledExperiences = experiences.filter((e) => e.trim());
 	const currentExperience = filledExperiences[currentIndex] ?? "";
 
+	useEffect(
+		() => () => {
+			if (validationToastTimerRef.current !== null) {
+				clearTimeout(validationToastTimerRef.current);
+			}
+		},
+		[],
+	);
+
+	const showValidationToast = (message: string) => {
+		if (validationToastTimerRef.current !== null) {
+			clearTimeout(validationToastTimerRef.current);
+		}
+
+		setValidationToast((current) => ({
+			key: (current?.key ?? 0) + 1,
+			message,
+		}));
+		validationToastTimerRef.current = setTimeout(() => {
+			setValidationToast(null);
+			validationToastTimerRef.current = null;
+		}, VALIDATION_TOAST_DURATION_MS);
+	};
+
+	const submitThoughts = () => {
+		const firstMissingIndex = filledExperiences.findIndex(
+			(_, index) => !thoughts[index]?.trim(),
+		);
+		if (firstMissingIndex >= 0) {
+			setCurrentIndex(firstMissingIndex);
+			showValidationToast(
+				`${firstMissingIndex + 1}번째 경험에 대한 생각을 작성해주세요.`,
+			);
+			return;
+		}
+
+		onSubmit();
+	};
+
 	return (
 		<div className="h-dvh flex flex-col bg-white text-left overflow-hidden">
+			{validationToast ? (
+				<div
+					key={validationToast.key}
+					role="alert"
+					className="feedback-validation-toast fixed left-1/2 top-[calc(env(safe-area-inset-top)+24px)] z-[100] flex w-[calc(100%-32px)] max-w-[370px] items-center gap-3 rounded-2xl border border-[#FFE1E4] bg-white/95 px-4 py-3 shadow-[0_10px_30px_rgba(15,23,42,0.16)] backdrop-blur-md"
+				>
+					<span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#FFF0F1] text-[#E5484D]">
+						<svg
+							aria-hidden="true"
+							className="h-3.5 w-3.5"
+							viewBox="0 0 16 16"
+							fill="none"
+						>
+							<path
+								d="M4.25 4.25l7.5 7.5m0-7.5-7.5 7.5"
+								stroke="currentColor"
+								strokeWidth="1.8"
+								strokeLinecap="round"
+							/>
+						</svg>
+					</span>
+					<p className="m-0 min-w-0 text-[14px] font-semibold leading-[1.45] text-[#262B33]">
+						{validationToast.message}
+					</p>
+				</div>
+			) : null}
 			<Header onBack={onBack} />
 			<div className="px-5">
 				<ProgressBar step={6} totalSteps={6} />
@@ -116,15 +190,7 @@ export function ThoughtsStep({
 				>
 					어떻게 작성하는지 모르겠어요
 				</button>
-				<Button
-					onClick={onSubmit}
-					disabled={
-						isSubmitting ||
-						!filledExperiences.every(
-							(_, index) => thoughts[index]?.trim().length > 0,
-						)
-					}
-				>
+				<Button onClick={submitThoughts} disabled={isSubmitting}>
 					전송
 				</Button>
 			</div>

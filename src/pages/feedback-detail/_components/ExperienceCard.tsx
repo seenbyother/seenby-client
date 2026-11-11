@@ -12,8 +12,8 @@ export function ExperienceCard({
 	const experienceNumber = experienceFeedback.displayOrder + 1;
 
 	return (
-		<article className="rounded-[20px] bg-white p-4">
-			<h2 className="m-0 text-center text-[16px] font-bold leading-normal">
+		<article className="min-w-0 rounded-[20px] bg-white p-4">
+			<h2 className="m-0 break-words text-center text-[16px] font-bold leading-normal [overflow-wrap:anywhere]">
 				{recipientName} 님과 함께한 경험 {experienceNumber}
 			</h2>
 			<div className="mt-5 flex flex-col gap-5">
@@ -41,7 +41,7 @@ function TextBlock({ label, text }: TextBlockProps) {
 			<p className="m-0 text-[14px] font-semibold leading-[1.252] text-[#656565]">
 				{label}
 			</p>
-			<p className="m-0 break-keep text-[16px] font-normal leading-[1.252] text-black">
+			<p className="m-0 whitespace-pre-wrap break-words text-[16px] font-normal leading-[1.252] text-black [overflow-wrap:anywhere]">
 				{text}
 			</p>
 		</div>
