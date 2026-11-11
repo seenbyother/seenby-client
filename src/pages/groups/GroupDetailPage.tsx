@@ -53,7 +53,7 @@ function toFeedbackItem(
 	return {
 		id: answer.id,
 		name: answer.reviewerName,
-		isReviewed: answer.retrospectiveCompleted,
+		isRead: answer.isRead,
 		hasReflection: answer.retrospectiveCompleted,
 	};
 }

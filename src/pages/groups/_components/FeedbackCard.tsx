@@ -3,7 +3,7 @@ import IcChevronRight from "@/assets/icons/ic_chevron_right.svg?react";
 export interface FeedbackItem {
 	id: number;
 	name: string;
-	isReviewed: boolean;
+	isRead: boolean;
 	hasReflection: boolean;
 }
 
@@ -25,7 +25,7 @@ export function FeedbackCard({ feedback, onClick }: FeedbackCardProps) {
 						<span className="text-[16px] font-bold text-black leading-tight">
 							{feedback.name}님의 피드백
 						</span>
-						{!feedback.isReviewed && (
+						{!feedback.isRead && (
 							<span className="w-[10px] h-[10px] rounded-full bg-[#0073FF] flex-shrink-0" />
 						)}
 					</div>
